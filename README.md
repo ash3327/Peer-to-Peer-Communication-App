@@ -2,7 +2,8 @@
 
 > [!NOTE]
 > Developer may need to call their ```pip install -r requirements.txt``` again after this update to support the use of fancier GUI through the ```customtkinter``` package. <br>
-> For more references on how to use this package, please refer to https://github.com/TomSchimansky/CustomTkinter.
+> For more references on how to use this package, please refer to https://github.com/TomSchimansky/CustomTkinter.<br>
+> But actually you can still stick with the normal ```tkinter``` for basic UI.
 
 > [!IMPORTANT]
 > Please refer to ```JobAllocation.md``` for the latest (potential) bugs yet to be fixed.
