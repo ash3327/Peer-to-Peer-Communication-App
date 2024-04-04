@@ -32,3 +32,62 @@ To start the client-side software, perform the following:
 
     - Use the token ```-h``` to get hints on the arguments.
     - Use the token ```-l``` to show logs of all communication between server and client.
+
+## Logs
+
+<details>
+<summary>Example of server side log:</summary>
+
+    Initializing Chat Server at IP [10.13.252.5] and port [12345]
+    Starting server...
+    Accepted request from: 10.13.252.5 port 1749
+    I/list                  : 10.13.252.5 1749      : {'action': 'list'}
+    O/list_rooms            : 10.13.252.5 1749      : {'rooms': []}
+    I/create                : 10.13.252.5 1749      : {'action': 'create', 'room': 'hello'}
+    O/created_room          : 10.13.252.5 1749      : {'status': 'ok', 'room': 'hello'}
+    I/list                  : 10.13.252.5 1749      : {'action': 'list'}
+    O/list_rooms            : 10.13.252.5 1749      : {'rooms': ['hello']}
+    I/create                : 10.13.252.5 1749      : {'action': 'create', 'room': 'world'}
+    O/created_room          : 10.13.252.5 1749      : {'status': 'ok', 'room': 'world'}
+    I/list                  : 10.13.252.5 1749      : {'action': 'list'}
+    O/list_rooms            : 10.13.252.5 1749      : {'rooms': ['hello', 'world']}
+    I/join                  : 10.13.252.5 1749      : {'action': 'join', 'room': 'world'}
+    O/join_room             : 10.13.252.5 1749      : {'status': 'room already joined', 'room': 'world'}
+    I/exit                  : 10.13.252.5 1749      : {'action': 'exit'}
+    Ended request from: 10.13.252.5 port 1749
+    Accepted request from: 10.13.252.5 port 1819
+    I/list                  : 10.13.252.5 1819      : {'action': 'list'}
+    O/list_rooms            : 10.13.252.5 1819      : {'rooms': ['hello', 'world']}
+    Accepted request from: 10.13.252.5 port 1829
+    I/list                  : 10.13.252.5 1829      : {'action': 'list'}
+    O/list_rooms            : 10.13.252.5 1829      : {'rooms': ['hello', 'world']}
+    I/exit                  : 10.13.252.5 1829      : {'action': 'exit'}
+    Ended request from: 10.13.252.5 port 1829
+    I/exit                  : 10.13.252.5 1819      : {'action': 'exit'}
+    Ended request from: 10.13.252.5 port 1819
+
+</details>
+
+<details>
+<summary>Example of client side log:</summary>
+
+    O/list                  : {'action': 'list'}
+    I/list_rooms            : {'rooms': ['hello', 'world']}
+    O/create                : {'action': 'create', 'room': 'room 4'}
+    O/list                  : {'action': 'list'}
+    I/created_room          : {'status': 'ok', 'room': 'room 4'}
+    Room 'room 4' created successfully.
+    I/list_rooms            : {'rooms': ['hello', 'world', 'room 4']}
+    O/join                  : {'action': 'join', 'room': 'world'}
+    I/join_room             : {'status': 'ok', 'room': 'world'}
+    Joined room 'world' successfully.
+    O/join                  : {'action': 'join', 'room': 'world'}
+    I/join_room             : {'status': 'room already joined', 'room': 'world'}
+    Room already joined.
+    O/create                : {'action': 'create', 'room': 'room 4'}
+    O/list                  : {'action': 'list'}
+    I/created_room          : {'status': 'room already exists', 'room': 'room 4'}
+    Failed to create room.
+    I/list_rooms            : {'rooms': ['hello', 'world', 'room 4']}
+    
+</details>
