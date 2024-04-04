@@ -22,10 +22,15 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Compress or decompress files using LZW algorithm')
     parser.add_argument('-i', '--ip', type=str, default=SERVER_HOST, help='The server IP address.')
     parser.add_argument('-p', '--port', type=int, default=SERVER_PORT, help='The server port.')
+    parser.add_argument('-l', '--log', default=argparse.SUPPRESS, action='store_true', help='Whether all communications are logged.')
     return parser.parse_args(), parser.print_help
 
 class ChatClient:
-    def __init__(self, host, port):
+    def __init__(self, host, port, show_log:bool=False):
+        # Settings
+        self.show_log = show_log
+
+        # Socket setup
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((host, port))
         self.rooms = []
@@ -39,6 +44,7 @@ class ChatClient:
         self.root.title("Voice Chat Rooms")
         self.root.protocol("WM_DELETE_WINDOW", self.terminate)
         self.gui_setup()
+        threading.Thread(target=self.listen, daemon=True).start()
         self.list_rooms()
         self.root.mainloop()
 
@@ -59,8 +65,8 @@ class ChatClient:
         create_room_button.pack()
 
         # List rooms button
-        list_rooms_button = tk.Button(self.root, text="List Rooms", command=self.list_rooms)
-        list_rooms_button.pack()
+        # list_rooms_button = tk.Button(self.root, text="List Rooms", command=self.list_rooms)
+        # list_rooms_button.pack()
         
         # Rooms listbox
         self.rooms_listbox = tk.Listbox(self.root)
@@ -86,6 +92,7 @@ class ChatClient:
 
     def send_command(self, command):
         try:
+            self.log(command, mode=f"O/{command['action']}")
             self.socket.send(json.dumps(command).encode('utf-8'))
         except ConnectionResetError:
             self.handle_lost_connection()
@@ -95,21 +102,6 @@ class ChatClient:
             self.socket.close()
             self.root.destroy()
             return
-        
-        response = json.loads(self.socket.recv(1024).decode('utf-8'))
-        if command['action'] == 'list':
-            self.update_rooms_list(response.get('rooms', []))
-        elif command['action'] == 'create':
-            if response['status'] == 'ok':
-                print(f"Room '{command['room']}' created successfully.")
-            else:
-                print("Failed to create room.")
-        elif command['action'] == 'join':
-            if response['status'] == 'ok':
-                print(f"Joined room '{command['room']}' successfully.")
-                self.start_audio_streaming(command['room'])
-            else:
-                print("Failed to join room.")
 
     def update_rooms_list(self, rooms):
         self.rooms_listbox.delete(0, tk.END)
@@ -122,6 +114,40 @@ class ChatClient:
         # Another to receive and play audio data from the room participants
         # You would need to implement the audio networking similar to the example in the previous answer
         pass
+
+    # Handler of logging
+    def log(self, content, mode='D'):
+        if self.show_log:
+            print(mode.ljust(20), '\t:', content)
+
+    # Handler of packages
+    def handle(self, label, response:dict):
+        self.log(response, mode=f'I/{label}')
+        if label == 'list_rooms':
+            self.update_rooms_list(response.get('rooms', []))
+        elif label == 'created_room':
+            if response['status'] == 'ok':
+                print(f"Room '{response['room']}' created successfully.")
+            else:
+                print("Failed to create room.")
+        elif label == 'join_room':
+            if response['status'] == 'ok':
+                print(f"Joined room '{response['room']}' successfully.")
+                self.start_audio_streaming(response['room'])
+            else:
+                print("Failed to join room.")
+
+    # Listening for data packets
+    def listen(self):
+        while True:
+            try:
+                response = json.loads(self.socket.recv(1024).decode('utf-8'))
+                if response:
+                    label = response['label']
+                    response.pop('label',None)
+                    self.handle(label, response)
+            except socket.error:
+                return
 
     # Terminate the current connection.
     def terminate(self):
@@ -139,4 +165,4 @@ if __name__ == '__main__':
         exit()
     SERVER_HOST = args.ip
     SERVER_PORT = args.port
-    ChatClient(SERVER_HOST, SERVER_PORT)
+    ChatClient(SERVER_HOST, SERVER_PORT, show_log='log' in args)
