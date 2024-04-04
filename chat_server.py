@@ -136,6 +136,15 @@ class ChatServer:
         if self.show_log:
             print(mode.ljust(20), '\t:', *socket.getpeername(), '\t:', content)
 
+
+def resolve_public_ip(): 
+    ## This returns a public IP, but is still useless for network hosting due to port fowarding
+    import requests as req
+    url = 'https://checkip.amazonaws.com/'
+    request = req.get(url)
+    ip = request.text
+    return ip
+
 # If the script is the main program, define host and port, and start the server
 if __name__ == '__main__':
     args, help = parse_args()

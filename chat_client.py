@@ -6,6 +6,8 @@ import tkinter as tk
 import pyaudio
 import json
 
+import resources
+
 # Networking configuration 
 # (Default values if user did not pass in any parameters)
 SERVER_HOST = '10.13.252.5'#'127.0.0.1'#'server_ip'  # Replace with the server's IP
@@ -39,41 +41,70 @@ class ChatClient:
         self.paudio = pyaudio.PyAudio()
         self.audio_stream = self.paudio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
 
-        # Start the GUI
+        # Start the Window
         self.root = tk.Tk()
         self.root.title("Voice Chat Rooms")
         self.root.protocol("WM_DELETE_WINDOW", self.terminate)
+    
         self.gui_setup()
         threading.Thread(target=self.listen, daemon=True).start()
         self.list_rooms()
         self.root.mainloop()
 
     def gui_setup(self):
+        # -------------- BACKGROUND -------------
         window_size = (800, 600)
         screen_size = (self.root.winfo_screenwidth(), self.root.winfo_screenheight()*.9)
         self.root.geometry('%dx%d' % window_size)
         self.root.eval('tk::PlaceWindow . center')
         self.root.geometry('+%d+%d' % (screen_size[0]/2-window_size[0]/2,screen_size[1]/2-window_size[1]/2))
-        self.root.configure(bg='light gray')
+        self.root.configure(bg=resources.get_color('window'))
 
-        # Room creation entry
-        self.create_room_entry = tk.Entry(self.root)
+        # --------------- SIDEBAR ---------------
+        # Sidebar Frame
+        self.sidebar = tk.Frame(self.root, bg=resources.get_color('side_bar'))
+        self.sidebar.place(relx=0, rely=0, relwidth=.25, relheight=1)
+
+        # Header
+        self.brand_frame = tk.Frame(self.sidebar)
+        self.brand_frame.place(relx=0, rely=0, relwidth=1, relheight=.2)
+        self.brand_frame.update()
+        logo_size = (self.brand_frame.winfo_width(), self.brand_frame.winfo_height())
+        print(logo_size)
+        logo = tk.Label(self.brand_frame, 
+                        image=resources.get_icon(
+                            'side_bar','brand_header',
+                            image_size=logo_size
+                        ))
+        logo.pack()
+
+        # Submenu Bars
+        self.submenu_frame = tk.Frame(self.sidebar, bg=resources.get_color('side_bar'))
+        self.submenu_frame.place(relx=0, rely=.25, relwidth=1, relheight=.75)
+
+        ## Room creation entry
+        self.create_room_entry = tk.Entry(self.submenu_frame)
         self.create_room_entry.pack()
         
-        # Create room button
-        create_room_button = tk.Button(self.root, text="Create Room", command=self.create_room)
+        ## Create room button
+        create_room_button = tk.Button(
+                self.submenu_frame, 
+                image=resources.get_icon('side_bar','add_icon',image_size=32), 
+                text="Create Room", 
+                command=self.create_room
+            )
         create_room_button.pack()
 
-        # List rooms button
+        ## List rooms button
         # list_rooms_button = tk.Button(self.root, text="List Rooms", command=self.list_rooms)
         # list_rooms_button.pack()
         
-        # Rooms listbox
-        self.rooms_listbox = tk.Listbox(self.root)
+        ## Rooms listbox
+        self.rooms_listbox = tk.Listbox(self.submenu_frame)
         self.rooms_listbox.pack()
 
-        # Join room button
-        join_room_button = tk.Button(self.root, text="Join Room", command=self.join_room)
+        ## Join room button
+        join_room_button = tk.Button(self.submenu_frame, text="Join Room", command=self.join_room)
         join_room_button.pack()
 
     def create_room(self):

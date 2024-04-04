@@ -6,7 +6,4 @@ pyaudio
 sounddevice
 soundfile
 RangeSlider
-
-torch
-transformers
-accelerate
+pillow
