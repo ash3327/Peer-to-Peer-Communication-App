@@ -7,6 +7,8 @@ import threading
 import json
 import selectors 
 
+import resources
+
 # Networking configuration
 # (Default values if user did not pass in any parameters)
 PORT = 12345         # Arbitrary non-privileged port number
@@ -55,7 +57,11 @@ class ChatServer:
                 # Receive and decode a message, then parse it as JSON
                 message = client_socket.recv(1024).decode('utf-8')
                 if message:
-                    command = json.loads(message)
+                    try: 
+                        command = json.loads(message)
+                    except Exception:
+                        self.log(message, mode='E/error', socket=client_socket)
+                        continue
                     self.log(command, mode=f"I/{command['action']}", socket=client_socket)
                     # Execute the appropriate action based on the command received
                     if command['action'] == 'create':

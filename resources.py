@@ -1,6 +1,7 @@
 from tkinter import PhotoImage
 from PIL import Image, ImageTk
 
+delimiter = '\r\n'
 _icons = {
     'side_bar':
     {
@@ -17,6 +18,13 @@ _colors = {
         'button': {
             'text_color': 'black'
         }
+    },
+    'message': {
+        'warning': 'coral1',
+        'fail': 'coral1',
+        'neutral': 'goldenrod1',
+        'success': 'spring green',
+        'info': 'dodger blue'
     }
 }
 

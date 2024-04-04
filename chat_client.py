@@ -9,6 +9,9 @@ import customtkinter as ctk
 
 import resources
 
+import warnings
+warnings.filterwarnings('ignore')
+
 # Networking configuration 
 # (Default values if user did not pass in any parameters)
 SERVER_HOST = '10.13.252.5'#'127.0.0.1'#'server_ip'  # Replace with the server's IP
@@ -71,7 +74,7 @@ class ChatClient:
         self.brand_frame.place(relx=0, rely=0, relwidth=1, relheight=.2)
         self.brand_frame.update()
         logo_size = (self.brand_frame.winfo_width(), self.brand_frame.winfo_height())
-        print(logo_size)
+        
         logo = tk.Label(self.brand_frame, 
                         image=resources.get_icon(
                             'side_bar','brand_header',
@@ -121,6 +124,17 @@ class ChatClient:
             )
         join_room_button.pack(pady=5)
 
+    # Alert Message
+    def notify_user(self, message:str, duration:int=5000, label='info'):
+        self.log(message, mode='D/print')
+        if hasattr(self, 'notif') and self.notif.winfo_ismapped():
+            self.notif.pack_forget()
+        self.notif = notif = ctk.CTkLabel(self.root, text=message, 
+                             bg_color=resources.get_color('message',label), 
+                             padx=10, pady=10, corner_radius=20)
+        notif.pack(expand=True)
+        notif.after(duration, lambda: notif.pack_forget())
+
     def create_room(self):
         room_name = self.create_room_entry.get()
         if room_name:
@@ -164,6 +178,8 @@ class ChatClient:
     def log(self, content, mode='D'):
         if self.show_log:
             print(mode.ljust(20), '\t:', content)
+        elif mode.startswith('D') or mode.startswith('E'):
+            print(content)
 
     # Handler of packages
     def handle(self, label, response:dict):
@@ -172,17 +188,19 @@ class ChatClient:
             self.update_rooms_list(response.get('rooms', []))
         elif label == 'created_room':
             if response['status'] == 'ok':
-                print(f"Room '{response['room']}' created successfully.")
+                self.notify_user(f"Room '{response['room']}' created successfully.", label='success')
+            elif response['status'] == 'room already exists':
+                self.notify_user("Room already exists.", label='neutral')
             else:
-                print("Failed to create room.")
+                self.notify_user("Failed to create room.", label='fail')
         elif label == 'join_room':
             if response['status'] == 'ok':
-                print(f"Joined room '{response['room']}' successfully.")
+                self.notify_user(f"Joined room '{response['room']}' successfully.", label='success')
                 self.start_audio_streaming(response['room'])
             elif response['status'] == 'room already joined':
-                print("Room already joined.")
+                self.notify_user("Room already joined.", label='neutral')
             else:
-                print("Failed to join room.")
+                self.notify_user("Failed to join room.", label='fail')
 
     # Listening for data packets
     def listen(self):
@@ -202,8 +220,8 @@ class ChatClient:
 
     # Handler in case of losing connection.
     def handle_lost_connection(self):
-        print('Lost Connection to server.')
-        exit()
+        self.notify_user('Lost Connection to server.', label='fail')
+        self.root.after(4000, lambda: exit())
 
 if __name__ == '__main__':
     args, help = parse_args()
