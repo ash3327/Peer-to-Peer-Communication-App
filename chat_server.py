@@ -66,14 +66,14 @@ class ChatServer:
                         self.join_room(command['room'], client_socket)
                     elif command['action'] == 'exit':
                         self.requests.remove(client_socket)
+                        print('Ended request from: %s port %s' % client_socket.getpeername())
                         client_socket.close()
-                        print('Ended request from:', client_socket)
                         return
             # On socket error, close the client's connection
             except socket.error:
                 self.requests.remove(client_socket)
+                print('Error. Ended request from: %s port %s' % client_socket.getpeername())
                 client_socket.close()
-                print('Error. Ended request from:', client_socket)
                 return
     
     # Create a new chat room or inform the host if it already exists
@@ -119,7 +119,7 @@ class ChatServer:
     def __listen(self):
         while True:
             client_socket, _ = self.server_socket.accept()
-            print('Accepted request from:',client_socket)
+            print('Accepted request from: %s port %s' % client_socket.getpeername())
             threading.Thread(target=self.handle_client, args=(client_socket,), daemon=True).start()
             self.requests.add(client_socket)
 
