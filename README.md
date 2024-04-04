@@ -13,7 +13,10 @@ Note:
 ## Server-Side
 To start the server, perform the following:
 
-1) Run ```chat_server.py``` by calling ```python chat_server.py --port <port>```. Use the token ```-h``` to get hints on the arguments.
+1) Run ```chat_server.py``` by calling ```python chat_server.py --port <port>```. 
+
+    - Use the token ```-h``` to get hints on the arguments.
+    - Use the token ```-l``` to show logs of all communication between server and client.
 
 Notes:
 
@@ -26,3 +29,6 @@ Notes:
 To start the client-side software, perform the following: 
 
 1) Run ```chat_client.py``` by calling ```python chat_client.py --ip <ip> --port <port>```, where the IP and port can be read from the server side.
+
+    - Use the token ```-h``` to get hints on the arguments.
+    - Use the token ```-l``` to show logs of all communication between server and client.
