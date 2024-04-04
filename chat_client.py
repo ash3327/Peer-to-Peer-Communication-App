@@ -85,7 +85,11 @@ class ChatClient:
             self.send_command({'action': 'join', 'room': selected_room})
 
     def send_command(self, command):
-        self.socket.send(json.dumps(command).encode('utf-8'))
+        try:
+            self.socket.send(json.dumps(command).encode('utf-8'))
+        except ConnectionResetError:
+            self.handle_lost_connection()
+            return
         if command['action'] == 'exit':
             self.socket.shutdown(socket.SHUT_RDWR)
             self.socket.close()
@@ -122,6 +126,11 @@ class ChatClient:
     # Terminate the current connection.
     def terminate(self):
         self.send_command({'action': 'exit'})
+
+    # Handler in case of losing connection.
+    def handle_lost_connection(self):
+        print('Lost Connection to server.')
+        exit()
 
 if __name__ == '__main__':
     args, help = parse_args()

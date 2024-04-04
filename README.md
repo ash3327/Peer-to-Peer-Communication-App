@@ -8,7 +8,7 @@ To install this package, perform the following:
 
 Note:
 
-1) The application currently only work with computers _in the same network_. 
+1) The application currently only work with computers _in the same network_ due to port forwarding. 
 
 ## Server-Side
 To start the server, perform the following:
