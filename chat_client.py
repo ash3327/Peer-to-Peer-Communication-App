@@ -6,10 +6,11 @@ import tkinter as tk
 import pyaudio
 import json
 import customtkinter as ctk
+import warnings
 
 import resources
 
-import warnings
+ctk.deactivate_automatic_dpi_awareness()
 warnings.filterwarnings('ignore')
 
 # Networking configuration 
@@ -46,7 +47,7 @@ class ChatClient:
         self.audio_stream = self.paudio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
 
         # Start the Window
-        self.root = tk.Tk()
+        self.root = ctk.CTk()
         self.root.title("Voice Chat Rooms")
         self.root.protocol("WM_DELETE_WINDOW", self.terminate)
     
@@ -87,8 +88,8 @@ class ChatClient:
         self.submenu_frame.place(relx=0, rely=.25, relwidth=1, relheight=.75)
 
         ## Room creation entry
-        self.create_room_entry = ctk.CTkEntry(self.submenu_frame)
-        self.create_room_entry.pack(pady=5)
+        # self.create_room_entry = ctk.CTkEntry(self.submenu_frame)
+        # self.create_room_entry.pack(pady=5)
 
         ## Button Styles
         button_style = dict(
@@ -99,11 +100,16 @@ class ChatClient:
         )
         
         ## Create room button
+        def create_room_dialog():
+            dialog = ctk.CTkInputDialog(text='Please input a name for your new room:', title='Input Room Name:')
+            result = dialog.get_input()
+            self.create_room(result)
+
         create_room_button = ctk.CTkButton(
                 self.submenu_frame, 
                 image=resources.get_icon('side_bar','add_icon',image_size=32), 
                 text="New Room", 
-                command=self.create_room,
+                command=create_room_dialog,
                 **button_style
             )
         create_room_button.pack(pady=5)
@@ -135,8 +141,8 @@ class ChatClient:
         notif.pack(expand=True)
         notif.after(duration, lambda: notif.pack_forget())
 
-    def create_room(self):
-        room_name = self.create_room_entry.get()
+    def create_room(self, room_name):
+        #room_name = self.create_room_entry.get()
         if room_name:
             self.send_command({'action': 'create', 'room': room_name})
             self.list_rooms()
