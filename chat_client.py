@@ -134,6 +134,8 @@ class ChatClient:
             if response['status'] == 'ok':
                 print(f"Joined room '{response['room']}' successfully.")
                 self.start_audio_streaming(response['room'])
+            elif response['status'] == 'room already joined':
+                print("Room already joined.")
             else:
                 print("Failed to join room.")
 

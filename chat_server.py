@@ -95,7 +95,10 @@ class ChatServer:
             self.chat_rooms[room_name].append(client_socket)
             self.send_data(client_socket, label='join_room', contents={'status': 'ok','room':room_name})
         else:
-            self.send_data(client_socket, label='join_room', contents={'status': 'room not found','room':room_name})
+            self.send_data(client_socket, label='join_room', contents={
+                    'status': 'room already joined' if room_name in self.chat_rooms else 'room not found',
+                    'room':room_name
+                })
 
     # Send data and encode data sent.
     def send_data(self, client_socket, label:str, contents:dict, mode:str='utf-8'):

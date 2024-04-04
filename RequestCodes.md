@@ -23,7 +23,7 @@ label | usage | params
 --- | --- | ---
 created_room | response to action of creating chat room | status [ok, room already exits]<br>room
 list_rooms | response to request of list of chat rooms | rooms (list)
-join_room | response to action of joining chat room | status [ok, room not found]<br>room
+join_room | response to action of joining chat room | status [ok, room not found, room already joined]<br>room
 
 
 
