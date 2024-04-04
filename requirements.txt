@@ -1,0 +1,12 @@
+# pip3 install -r requirements.txt
+numpy
+scipy
+matplotlib
+pyaudio
+sounddevice
+soundfile
+RangeSlider
+
+torch
+transformers
+accelerate

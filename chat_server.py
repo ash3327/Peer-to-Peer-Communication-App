@@ -12,7 +12,17 @@ class ChatServer:
         self.server_socket.listen()
         # Dictionary to keep track of chat rooms and their participants
         self.chat_rooms = {}  # Format: {room_name: [client_sockets]}
+
+        print('Initializing Chat Server at IP [{}] and port [{}]'.format(*self.get_ip()))
         
+    # Get the IP address of the server
+    def get_ip(self):
+        '''Output Format: (IPv4 address, port)'''
+        ip = list(self.server_socket.getsockname())
+        if ip[0] == '127.0.0.1':
+            ip[0] = socket.gethostbyname(socket.gethostname())
+        return ip
+
     # Handle incoming messages from clients
     def handle_client(self, client_socket):
         while True:
@@ -64,5 +74,6 @@ class ChatServer:
 # If the script is the main program, define host and port, and start the server
 if __name__ == '__main__':
     HOST = '127.0.0.1'  # Loopback address for localhost
+    HOST = socket.gethostbyname(socket.gethostname())
     PORT = 12345         # Arbitrary non-privileged port number
     ChatServer(HOST, PORT).start()
