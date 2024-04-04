@@ -20,6 +20,17 @@ def get_itm(ic, *list):
     return ic
 
 def get_icon(*list_, image_size:int=None):
+    '''
+            Usage: get_icon('side_bar', 'add_icon', image_size=32) 
+
+        ->  _icons = {
+                'side_bar': # <---
+                {
+                    'add_icon': [Image.open("./res/add_icon.png"), None],  # <--------
+                    'brand_header': [Image.open("./res/brand_header.png"), None]
+                }
+            }
+    '''
     ic = get_itm(_icons, *list_)
     icc = ic[0]
     if isinstance(image_size, int):
@@ -30,4 +41,15 @@ def get_icon(*list_, image_size:int=None):
     return ic[1]
 
 def get_color(*list):
+    '''
+            Usage: get_color('side_bar', 'add_icon') 
+
+        ->  _colors = {
+                'side_bar': # <---
+                {
+                    'add_icon':'snow2',  # <--------
+                    'brand_header':'gray'
+                }
+            }
+    '''
     return get_itm(_colors, *list)

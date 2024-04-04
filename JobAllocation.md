@@ -5,7 +5,8 @@
 
 ## To Do:
 
-1) Chat Room Creation and Joining
+1) Chat Room Creation and Joining (In progress)
+    - Note: For the GUI, please try to put all the image and color references in the ```resources.py``` file.
 
 2) Multi-user Voice Chat
 
