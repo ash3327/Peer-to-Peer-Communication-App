@@ -41,6 +41,12 @@ class ChatClient:
         self.root.mainloop()
 
     def gui_setup(self):
+        window_size = (800, 600)
+        screen_size = (self.root.winfo_screenwidth(), self.root.winfo_screenheight()*.9)
+        self.root.geometry('%dx%d' % window_size)
+        self.root.eval('tk::PlaceWindow . center')
+        self.root.geometry('+%d+%d' % (screen_size[0]/2-window_size[0]/2,screen_size[1]/2-window_size[1]/2))
+
         # Room creation entry
         self.create_room_entry = tk.Entry(self.root)
         self.create_room_entry.pack()
