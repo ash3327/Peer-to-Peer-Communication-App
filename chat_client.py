@@ -6,7 +6,8 @@ import tkinter as tk
 import pyaudio
 import json
 
-# Networking configuration
+# Networking configuration 
+# (Default values if user did not pass in any parameters)
 SERVER_HOST = '10.13.252.5'#'127.0.0.1'#'server_ip'  # Replace with the server's IP
 SERVER_PORT = 12345
 FORMAT = pyaudio.paInt16

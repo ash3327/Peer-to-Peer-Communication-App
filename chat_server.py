@@ -5,6 +5,8 @@ import threading
 import json
 import selectors 
 
+# Networking configuration
+# (Default values if user did not pass in any parameters)
 PORT = 12345         # Arbitrary non-privileged port number
 
 '''
