@@ -5,6 +5,7 @@ import threading
 import tkinter as tk
 import pyaudio
 import json
+import customtkinter as ctk
 
 import resources
 
@@ -62,7 +63,7 @@ class ChatClient:
 
         # --------------- SIDEBAR ---------------
         # Sidebar Frame
-        self.sidebar = tk.Frame(self.root, bg=resources.get_color('side_bar'))
+        self.sidebar = tk.Frame(self.root, bg=resources.get_color('side_bar','fill'))
         self.sidebar.place(relx=0, rely=0, relwidth=.25, relheight=1)
 
         # Header
@@ -79,21 +80,30 @@ class ChatClient:
         logo.pack()
 
         # Submenu Bars
-        self.submenu_frame = tk.Frame(self.sidebar, bg=resources.get_color('side_bar'))
+        self.submenu_frame = tk.Frame(self.sidebar, bg=resources.get_color('side_bar','fill'))
         self.submenu_frame.place(relx=0, rely=.25, relwidth=1, relheight=.75)
 
         ## Room creation entry
-        self.create_room_entry = tk.Entry(self.submenu_frame)
-        self.create_room_entry.pack()
+        self.create_room_entry = ctk.CTkEntry(self.submenu_frame)
+        self.create_room_entry.pack(pady=5)
+
+        ## Button Styles
+        button_style = dict(
+            text_color=resources.get_color('side_bar','button','text_color'),
+            width=self.sidebar.winfo_width(),
+            corner_radius=0,
+            anchor='w'
+        )
         
         ## Create room button
-        create_room_button = tk.Button(
+        create_room_button = ctk.CTkButton(
                 self.submenu_frame, 
                 image=resources.get_icon('side_bar','add_icon',image_size=32), 
-                text="Create Room", 
-                command=self.create_room
+                text="New Room", 
+                command=self.create_room,
+                **button_style
             )
-        create_room_button.pack()
+        create_room_button.pack(pady=5)
 
         ## List rooms button
         # list_rooms_button = tk.Button(self.root, text="List Rooms", command=self.list_rooms)
@@ -101,11 +111,15 @@ class ChatClient:
         
         ## Rooms listbox
         self.rooms_listbox = tk.Listbox(self.submenu_frame)
-        self.rooms_listbox.pack()
+        self.rooms_listbox.pack(pady=5)
 
         ## Join room button
-        join_room_button = tk.Button(self.submenu_frame, text="Join Room", command=self.join_room)
-        join_room_button.pack()
+        join_room_button = ctk.CTkButton(
+                self.submenu_frame, text="Join Room", command=self.join_room, 
+                image=resources.get_icon('side_bar','join_room_icon', image_size=32), 
+                **button_style
+            )
+        join_room_button.pack(pady=5)
 
     def create_room(self):
         room_name = self.create_room_entry.get()

@@ -4,14 +4,20 @@ from PIL import Image, ImageTk
 _icons = {
     'side_bar':
     {
-        'add_icon': [Image.open("./res/add_icon.png"), None],
+        'add_icon': [Image.open("./res/add_icon.png"), None], # Format: [Image.open(<path>), None].
+        'join_room_icon': [Image.open("./res/join_group_icon.png"), None],
         'brand_header': [Image.open("./res/brand_header.png"), None]
     }
 }
 
 _colors = {
     'window': 'light gray',
-    'side_bar': 'snow2'
+    'side_bar': {
+        'fill': 'snow2',
+        'button': {
+            'text_color': 'black'
+        }
+    }
 }
 
 def get_itm(ic, *list):

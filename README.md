@@ -1,5 +1,9 @@
 # csci3280_2
 
+> [!NOTE]
+> Developer may need to call their ```pip install -r requirements.txt``` again after this update to support the use of fancier GUI through the ```customtkinter``` package.
+> For more references on how to use this package, please refer to https://github.com/TomSchimansky/CustomTkinter.
+
 ## Installation
 
 To install this package, perform the following:

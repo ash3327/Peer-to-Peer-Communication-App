@@ -7,3 +7,5 @@ sounddevice
 soundfile
 RangeSlider
 pillow
+
+customtkinter
