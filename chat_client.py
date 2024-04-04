@@ -1,3 +1,5 @@
+import argparse
+
 import socket
 import threading
 import tkinter as tk
@@ -12,6 +14,15 @@ CHANNELS = 1
 RATE = 44100
 CHUNK = 1024
 
+'''
+    Parse command line arguments
+'''
+def parse_args():
+    parser = argparse.ArgumentParser(description='Compress or decompress files using LZW algorithm')
+    parser.add_argument('-i', '--ip', type=str, default=SERVER_HOST, help='The server IP address.')
+    parser.add_argument('-p', '--port', type=int, default=SERVER_PORT, help='The server port.')
+    return parser.parse_args(), parser.print_help
+
 class ChatClient:
     def __init__(self, host, port):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -25,6 +36,7 @@ class ChatClient:
         # Start the GUI
         self.root = tk.Tk()
         self.root.title("Voice Chat Rooms")
+        self.root.protocol("WM_DELETE_WINDOW", self.terminate)
         self.gui_setup()
         self.root.mainloop()
 
@@ -64,6 +76,12 @@ class ChatClient:
 
     def send_command(self, command):
         self.socket.send(json.dumps(command).encode('utf-8'))
+        if command['action'] == 'exit':
+            self.socket.shutdown(socket.SHUT_RDWR)
+            self.socket.close()
+            self.root.destroy()
+            return
+        
         response = json.loads(self.socket.recv(1024).decode('utf-8'))
         if command['action'] == 'list':
             self.update_rooms_list(response.get('rooms', []))
@@ -91,5 +109,14 @@ class ChatClient:
         # You would need to implement the audio networking similar to the example in the previous answer
         pass
 
+    def terminate(self):
+        self.send_command({'action': 'exit'})
+
 if __name__ == '__main__':
+    args, help = parse_args()
+    if 'h' in args:
+        help()
+        exit()
+    SERVER_HOST = args.ip
+    SERVER_PORT = args.port
     ChatClient(SERVER_HOST, SERVER_PORT)

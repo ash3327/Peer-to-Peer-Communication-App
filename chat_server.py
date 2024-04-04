@@ -1,6 +1,19 @@
+import argparse
+
 import socket
 import threading
 import json
+import selectors 
+
+PORT = 12345         # Arbitrary non-privileged port number
+
+'''
+    Parse command line arguments
+'''
+def parse_args():
+    parser = argparse.ArgumentParser(description='Compress or decompress files using LZW algorithm')
+    parser.add_argument('-p', '--port', type=int, metavar="{1024..49151}", default=PORT, help='The port number in the range 1024-49151.')
+    return parser.parse_args(), parser.print_help
 
 # Define the ChatServer class to manage chat rooms and client connections
 class ChatServer:
@@ -38,9 +51,14 @@ class ChatServer:
                         self.list_rooms(client_socket)
                     elif command['action'] == 'join':
                         self.join_room(command['room'], client_socket)
+                    elif command['action'] == 'exit':
+                        client_socket.close()
+                        print('Ended request from:', client_socket)
+                        return
             # On socket error, close the client's connection
             except socket.error:
                 client_socket.close()
+                print('Error. Ended request from:', client_socket)
                 return
     
     # Create a new chat room or inform the host if it already exists
@@ -63,17 +81,22 @@ class ChatServer:
             client_socket.send(json.dumps({'status': 'ok'}).encode('utf-8'))
         else:
             client_socket.send(json.dumps({'status': 'room not found'}).encode('utf-8'))
-    
+
     # Start the server, accept connections, and spawn threads to handle each client
     def start(self):
         print("Starting server...")
         while True:
             client_socket, _ = self.server_socket.accept()
+            print('Accepted request from:',client_socket)
             threading.Thread(target=self.handle_client, args=(client_socket,)).start()
 
 # If the script is the main program, define host and port, and start the server
 if __name__ == '__main__':
-    HOST = '127.0.0.1'  # Loopback address for localhost
+    args, help = parse_args()
+    if 'h' in args:
+        help()
+        exit()
+    #HOST = '127.0.0.1'  # Loopback address for localhost
     HOST = socket.gethostbyname(socket.gethostname())
-    PORT = 12345         # Arbitrary non-privileged port number
+    PORT = args.port
     ChatServer(HOST, PORT).start()

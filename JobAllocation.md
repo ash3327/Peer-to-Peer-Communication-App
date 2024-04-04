@@ -23,4 +23,4 @@
 
 ## Notes:
 
-1) Checking IP: Use ```netstat -a -b -n```
+1) Checking IP: Use ```netstat -ano | findStr "12345"``` for port 12345.
