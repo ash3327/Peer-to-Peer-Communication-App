@@ -1,4 +1,6 @@
 import argparse
+import signal
+import sys
 
 import socket
 import threading
@@ -26,7 +28,9 @@ class ChatServer:
         self.server_socket.bind((host, port))
         self.server_socket.listen()
         # Dictionary to keep track of chat rooms and their participants
-        self.chat_rooms = {}  # Format: {room_name: [client_sockets]}
+        self.chat_rooms = dict()  # Format: {room_name: [client_sockets]}
+        # List to keep track of active requests
+        self.requests = set()
 
         print('Initializing Chat Server at IP [{}] and port [{}]'.format(*self.get_ip()))
         
@@ -54,11 +58,13 @@ class ChatServer:
                     elif command['action'] == 'join':
                         self.join_room(command['room'], client_socket)
                     elif command['action'] == 'exit':
+                        self.requests.remove(client_socket)
                         client_socket.close()
                         print('Ended request from:', client_socket)
                         return
             # On socket error, close the client's connection
             except socket.error:
+                self.requests.remove(client_socket)
                 client_socket.close()
                 print('Error. Ended request from:', client_socket)
                 return
@@ -87,10 +93,25 @@ class ChatServer:
     # Start the server, accept connections, and spawn threads to handle each client
     def start(self):
         print("Starting server...")
+        threading.Thread(target=self.__listen, daemon=True).start()
+        signal.signal(signal.SIGINT, self.terminate)
+        while True:
+            pass
+
+    def __listen(self):
         while True:
             client_socket, _ = self.server_socket.accept()
             print('Accepted request from:',client_socket)
-            threading.Thread(target=self.handle_client, args=(client_socket,)).start()
+            threading.Thread(target=self.handle_client, args=(client_socket,), daemon=True).start()
+            self.requests.add(client_socket)
+
+    # Terminate all connections and shutdown the server.
+    def terminate(self, *args):
+        print('Terminating all connections.')
+        for client_socket in self.requests:
+            client_socket.close()
+        print('Server terminated.')
+        sys.exit()
 
 # If the script is the main program, define host and port, and start the server
 if __name__ == '__main__':

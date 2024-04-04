@@ -39,6 +39,7 @@ class ChatClient:
         self.root.title("Voice Chat Rooms")
         self.root.protocol("WM_DELETE_WINDOW", self.terminate)
         self.gui_setup()
+        self.list_rooms()
         self.root.mainloop()
 
     def gui_setup(self):
@@ -47,6 +48,7 @@ class ChatClient:
         self.root.geometry('%dx%d' % window_size)
         self.root.eval('tk::PlaceWindow . center')
         self.root.geometry('+%d+%d' % (screen_size[0]/2-window_size[0]/2,screen_size[1]/2-window_size[1]/2))
+        self.root.configure(bg='light gray')
 
         # Room creation entry
         self.create_room_entry = tk.Entry(self.root)
@@ -72,6 +74,7 @@ class ChatClient:
         room_name = self.create_room_entry.get()
         if room_name:
             self.send_command({'action': 'create', 'room': room_name})
+            self.list_rooms()
 
     def list_rooms(self):
         self.send_command({'action': 'list'})
@@ -116,6 +119,7 @@ class ChatClient:
         # You would need to implement the audio networking similar to the example in the previous answer
         pass
 
+    # Terminate the current connection.
     def terminate(self):
         self.send_command({'action': 'exit'})
 

@@ -23,4 +23,8 @@
 
 ## Notes:
 
-1) Checking IP: Use ```netstat -ano | findStr "12345"``` for port 12345.
+1) Checking IP: Run ```netstat -ano | findStr "12345"``` in command prompt for checking the existence of port 12345.
+
+## Developer Notes:
+
+1) Threads with ```deamon=True``` as parameter will kill itself when the main thread terminates.
