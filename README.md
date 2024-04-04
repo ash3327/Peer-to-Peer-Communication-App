@@ -43,7 +43,7 @@ To start the client-side software, perform the following:
 
 Functionalities:
 
-> [!INFO]
+> [!NOTE]
 > 1) Users can click on 'new room' button to enter the name of the room now.
 ![alt text](image-1.png)
 
