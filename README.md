@@ -44,13 +44,15 @@ To start the client-side software, perform the following:
     - Use the token ```-h``` to get hints on the arguments.
     - Use the token ```-l``` to show logs of all communication between server and client.
 
-Functionalities:
+<details>
+<summary>Functionalities:</summary>
 
-> [!NOTE]
-> 1) Users can click on 'new room' button to enter the name of the room now.
-> ![alt text](image-1.png)
-> 2) users can click on the room names to join the room directly now.
-> ![alt text](image.png)
+1) Users can click on 'new room' button to enter the name of the room now.
+![alt text](image-1.png)
+2) users can click on the room names to join the room directly now.
+![alt text](image.png)
+
+</details>
 
 ## Logs
 
