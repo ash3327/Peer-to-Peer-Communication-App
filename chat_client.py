@@ -182,13 +182,8 @@ class ChatClient:
             self.rooms_listbox.update(room, is_member)
 
     def start_audio_streaming(self, room_name=None): # room_name is useless as self.current_room is used
-        # This function would start two threads:
-        # One to handle sending audio data to the room participants
-        # Another to receive and play audio data from the room participants
-        # You would need to implement the audio networking similar to the example in the previous answer
         if not self.audio_stream_thread:
             self.audio_stream_thread = threading.Thread(target=self.send_audio_thread, daemon=True).start()
-
 
     def send_audio_thread(self):
         while True:
