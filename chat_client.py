@@ -88,10 +88,6 @@ class ChatClient:
         self.submenu_frame = tk.Frame(self.sidebar, bg=resources.get_color('side_bar','fill'))
         self.submenu_frame.place(relx=0, rely=.25, relwidth=1, relheight=.75)
 
-        ## Room creation entry
-        # self.create_room_entry = ctk.CTkEntry(self.submenu_frame)
-        # self.create_room_entry.pack(pady=5)
-
         ## Button Styles
         button_style = dict(
             text_color=resources.get_color('side_bar','button','text_color'),
@@ -120,14 +116,8 @@ class ChatClient:
                 **button_style
             )
         create_room_button.pack()
-
-        ## List rooms button
-        # list_rooms_button = tk.Button(self.root, text="List Rooms", command=self.list_rooms)
-        # list_rooms_button.pack()
         
         ## Rooms listbox
-        # self.rooms_listbox = tk.Listbox(self.submenu_frame)
-        # self.rooms_listbox.pack(pady=5)
         self.submenu_frame.update()
         self.rooms_listbox = RoomsPanel(
                 master=self.submenu_frame, 
@@ -138,14 +128,6 @@ class ChatClient:
                 border_width=0, corner_radius=0
             )
         self.rooms_listbox.pack(pady=10)
-
-        ## Join room button
-        # join_room_button = ctk.CTkButton(
-        #         self.submenu_frame, text="Join Room", command=self.join_room, 
-        #         image=resources.get_icon('side_bar','join_room_icon', image_size=32), 
-        #         **button_style
-        #     )
-        # join_room_button.pack()
 
     # Alert Message
     def notify_user(self, message:str, duration:int=5000, label='info'):

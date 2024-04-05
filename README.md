@@ -25,6 +25,9 @@ To start the server, perform the following:
 
     - Use the token ```-h``` to get hints on the arguments.
     - Use the token ```-l``` to show logs of all communication between server and client.
+    - Press ```Ctrl+C``` for the following:
+        - check the ip and port of the server, or
+        - terminate the server
 
 Notes:
 

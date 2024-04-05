@@ -131,11 +131,16 @@ class ChatServer:
 
     # Terminate all connections and shutdown the server.
     def terminate(self, *args):
-        print('Terminating all connections.')
-        for client_socket in self.requests:
-            client_socket.close()
-        print('Server terminated.')
-        sys.exit()
+        print('You are currently on Chat Server at IP [{}] and port [{}]'.format(*self.get_ip()))
+        print('Are you sure that you want to terminate this server? Reply with y/n.')
+        response = input()
+        if response in ('y', 'yes'):
+            print('Terminating all connections.')
+            for client_socket in self.requests:
+                client_socket.close()
+            print('Server terminated.')
+            sys.exit()
+        
 
     # Handler of logging
     def log(self, content, mode='D', socket:socket.socket=None):
