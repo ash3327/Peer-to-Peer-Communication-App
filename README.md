@@ -18,6 +18,9 @@ Note:
 
 1) The application currently only work with computers _in the same network_ due to port forwarding. 
 
+> [!IMPORTANT]
+> 2) Please TURN OFF Windows Defender Firewall AND Windows Firewall (or any firewalls) in the private network before using.
+
 ## Server-Side
 To start the server, perform the following:
 
