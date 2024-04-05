@@ -9,6 +9,13 @@ _icons = {
         'join_room_icon': [Image.open("./res/join_group_icon.png"), None],
         'room_icon': [Image.open("./res/group_icon.png"), None],
         'brand_header': [Image.open("./res/brand_header.png"), None]
+    },
+    'record':
+    {
+        'start_recording': [Image.open("./res/start_recording.png"), None],
+        'stop_recording': [Image.open("./res/stop_recording.png"), None],
+        'start_playback': [Image.open("./res/start_playback.png"), None],
+        'start_playback': [Image.open("./res/stop_playback.png"), None],
     }
 }
 
