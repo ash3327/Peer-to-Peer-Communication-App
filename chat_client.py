@@ -10,6 +10,7 @@ import warnings
 
 import resources
 from gui_utils import RoomsPanel
+import base64
 
 ctk.deactivate_automatic_dpi_awareness()
 warnings.filterwarnings('ignore')
@@ -20,7 +21,7 @@ SERVER_HOST = '10.13.252.5'#'127.0.0.1'#'server_ip'  # Replace with the server's
 SERVER_PORT = 12345
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
-RATE = 44100
+RATE = 22050
 CHUNK = 1024
 
 '''
@@ -37,6 +38,7 @@ class ChatClient:
     def __init__(self, host, port, show_log:bool=False):
         # Settings
         self.show_log = show_log
+        self.current_room = None # for removing from room if exit program
 
         # Socket setup
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -45,7 +47,8 @@ class ChatClient:
         
         # Audio setup
         self.paudio = pyaudio.PyAudio()
-        self.audio_stream = self.paudio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
+        self.audio_stream = self.paudio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, output=True, frames_per_buffer=CHUNK)
+        self.audio_stream_thread = None
 
         # Start the Window
         self.root = ctk.CTk()
@@ -153,7 +156,7 @@ class ChatClient:
         if selected_room is None:
             selected_room = self.rooms_listbox.get(tk.ACTIVE)
         if selected_room:
-            self.send_command({'action': 'join', 'room': selected_room})
+            self.send_command({'action': 'join', 'room': selected_room, 'old_room': self.current_room})
 
     def send_command(self, command):
         try:
@@ -172,12 +175,41 @@ class ChatClient:
         for room, is_member in rooms.items():
             self.rooms_listbox.update(room, is_member)
 
-    def start_audio_streaming(self, room_name):
+    def start_audio_streaming(self, room_name=None): # room_name is useless as self.current_room is used
         # This function would start two threads:
         # One to handle sending audio data to the room participants
         # Another to receive and play audio data from the room participants
         # You would need to implement the audio networking similar to the example in the previous answer
-        pass
+        if not self.audio_stream_thread:
+            self.audio_stream_thread = threading.Thread(target=self.send_audio_thread, daemon=True).start()
+
+
+    def send_audio_thread(self):
+        while True:
+            if self.current_room:
+                try:
+                    # Read audio data from the microphone
+                    audio_data = self.audio_stream.read(CHUNK)
+                    audio_data = base64.b64encode(audio_data).decode('utf-8')
+                    # print(len(audio_data))
+
+                    # Send the audio data to the server
+                    command = {'action': 'voice', 
+                            'audio_data': audio_data,
+                            'room_name': self.current_room,}
+                    # command = {'action':'dummy'}
+                    self.send_command(command)
+
+
+                except Exception as e:
+                    print("Error in send_audio_thread:", e)
+                    break
+
+    def play_audio_thread(self, audio_data):
+        # Play the received audio data
+        audio_data = base64.b64decode(audio_data)
+        self.audio_stream.write(audio_data)
+        # self.play_audio(audio_data)
 
     # Handler of logging
     def log(self, content, mode='D'):
@@ -201,7 +233,9 @@ class ChatClient:
         elif label == 'join_room':
             if response['status'] == 'ok':
                 self.notify_user(f"Joined room '{response['room']}' successfully.", label='success')
+                self.current_room = response['room']
                 self.list_rooms()
+                # print('start audio_streaming thread')
                 self.start_audio_streaming(response['room'])
             elif response['status'] == 'room already joined':
                 self.notify_user("Room already joined.", label='neutral')
@@ -209,12 +243,14 @@ class ChatClient:
                 self.notify_user("Failed to join room.", label='fail')
         elif label == 'terminate':
             self.notify_user("Server Terminated.", label='neutral')
+        elif label == 'voice': # receive voice of other people
+            threading.Thread(target=self.play_audio_thread, args=(response['audio_data'],), daemon=True).start()
 
     # Listening for data packets
     def listen(self):
         while True:
             try:
-                response = json.loads(self.socket.recv(1024).decode('utf-8'))
+                response = json.loads(self.socket.recv(4096).decode('utf-8'))
                 if response:
                     label = response['label']
                     response.pop('label',None)
@@ -224,7 +260,7 @@ class ChatClient:
 
     # Terminate the current connection.
     def terminate(self):
-        self.send_command({'action': 'exit'})
+        self.send_command({'action': 'exit', 'room_name': self.current_room})
 
     # Handler in case of losing connection.
     def handle_lost_connection(self):

@@ -55,7 +55,7 @@ class ChatServer:
         while True:
             try:
                 # Receive and decode a message, then parse it as JSON
-                message = client_socket.recv(1024).decode('utf-8')
+                message = client_socket.recv(4096).decode('utf-8')
                 if message:
                     try: 
                         command = json.loads(message)
@@ -69,12 +69,16 @@ class ChatServer:
                     elif command['action'] == 'list':
                         self.list_rooms(client_socket)
                     elif command['action'] == 'join':
-                        self.join_room(command['room'], client_socket)
+                        self.join_room(command['room'], client_socket, command['old_room'])
                     elif command['action'] == 'exit':
+                        self.remove_client(client_socket, command['room_name'])
                         self.requests.remove(client_socket)
                         print('Ended request from: %s port %s' % client_socket.getpeername())
                         client_socket.close()
                         return
+                    elif command['action'] == 'voice':
+                        self.voice(command, client_socket) # fyi, command structure is in send_audio_thread
+
             # On socket error, close the client's connection
             except socket.error:
                 try:
@@ -85,10 +89,24 @@ class ChatServer:
                 except Exception:
                     return
     
+    # remove client from room if client exits
+    def remove_client(self, client_socket, room_name):
+        if room_name:
+            self.chat_rooms[room_name].remove(client_socket)
+
+    # receive voice from user and send voice to other user
+    def voice(self, command, client_socket):
+        # print(f'audio data:{command["audio_data"]}')
+        room_name = command['room_name']
+        for other_user in self.chat_rooms[room_name]:
+            if other_user != client_socket:
+                self.send_data(other_user, label='voice', contents={'audio_data': command['audio_data']})
+
     # Create a new chat room or inform the host if it already exists
     def create_room(self, room_name, host_socket):
         if room_name not in self.chat_rooms:
-            self.chat_rooms[room_name] = [host_socket]
+            # self.chat_rooms[room_name] = [host_socket]
+            self.chat_rooms[room_name] = []
             self.send_data(host_socket, label='created_room', contents={'status': 'ok','room':room_name})
         else:
             self.send_data(host_socket, label='created_room', contents={'status': 'room already exists','room':room_name})
@@ -99,8 +117,10 @@ class ChatServer:
         self.send_data(client_socket, label='list_rooms', contents={'rooms': cr_info})
     
     # Add a client to an existing chat room
-    def join_room(self, room_name, client_socket):
+    def join_room(self, room_name, client_socket, old_room):
         if room_name in self.chat_rooms and client_socket not in self.chat_rooms[room_name]:
+            if old_room:
+                self.chat_rooms[old_room].remove(client_socket)
             self.chat_rooms[room_name].append(client_socket)
             self.send_data(client_socket, label='join_room', contents={'status': 'ok','room':room_name})
         else:
