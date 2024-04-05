@@ -117,9 +117,11 @@ class ChatServer:
         if room_name not in self.chat_rooms:
             self.chat_rooms[room_name] = []
             self.send_data(host_socket, label='created_room', contents={'status': 'ok','room':room_name})
+            for client_socket in self.requests:
+                self.list_rooms(client_socket)
         else:
             self.send_data(host_socket, label='created_room', contents={'status': 'room already exists','room':room_name})
-
+    
     # List all chat rooms to the requesting client
     def list_rooms(self, client_socket):
         cr_info = {room: client_socket in self.chat_rooms[room] for room in self.chat_rooms}
