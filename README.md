@@ -45,7 +45,9 @@ Functionalities:
 
 > [!NOTE]
 > 1) Users can click on 'new room' button to enter the name of the room now.
-![alt text](image-1.png)
+> ![alt text](image-1.png)
+> 2) users can click on the room names to join the room directly now.
+> ![alt text](image.png)
 
 ## Logs
 
