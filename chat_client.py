@@ -128,21 +128,22 @@ class ChatClient:
         ## Rooms listbox
         # self.rooms_listbox = tk.Listbox(self.submenu_frame)
         # self.rooms_listbox.pack(pady=5)
-
+        self.submenu_frame.update()
         self.rooms_listbox = RoomsPanel(
                 master=self.submenu_frame, 
                 button_style=button_style, 
-                join_room_command=self.join_room
+                join_room_command=self.join_room,
+                height=self.submenu_frame.winfo_height()
             )
         self.rooms_listbox.pack()
 
         ## Join room button
-        join_room_button = ctk.CTkButton(
-                self.submenu_frame, text="Join Room", command=self.join_room, 
-                image=resources.get_icon('side_bar','join_room_icon', image_size=32), 
-                **button_style
-            )
-        join_room_button.pack()
+        # join_room_button = ctk.CTkButton(
+        #         self.submenu_frame, text="Join Room", command=self.join_room, 
+        #         image=resources.get_icon('side_bar','join_room_icon', image_size=32), 
+        #         **button_style
+        #     )
+        # join_room_button.pack()
 
     # Alert Message
     def notify_user(self, message:str, duration:int=5000, label='info'):
@@ -184,9 +185,8 @@ class ChatClient:
             return
 
     def update_rooms_list(self, rooms:dict):
-        self.rooms_listbox.delete(0, tk.END)
         for room, is_member in rooms.items():
-            self.rooms_listbox.insert(tk.END, room, is_member)
+            self.rooms_listbox.update(room, is_member)
 
     def start_audio_streaming(self, room_name):
         # This function would start two threads:
