@@ -101,7 +101,13 @@ class ChatClient:
         
         ## Create room button
         def create_room_dialog():
+            self.root.update_idletasks()
             dialog = ctk.CTkInputDialog(text='Please input a name for your new room:', title='Input Room Name:')
+            dialog.update()
+            screen_size = (self.root.winfo_screenwidth(), self.root.winfo_screenheight()*.9)
+            window_size = (dialog.winfo_width()*1.5, dialog.winfo_height())
+            dialog.tk.eval(f'tk::PlaceWindow {dialog._w} center')
+            dialog.geometry('+%d+%d' % (screen_size[0]/2-window_size[0]/2,screen_size[1]/2-window_size[1]/2))
             result = dialog.get_input()
             self.create_room(result)
 
