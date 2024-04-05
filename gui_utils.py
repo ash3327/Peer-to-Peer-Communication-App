@@ -22,8 +22,9 @@ class RoomsPanel(ctk.CTkScrollableFrame):
                 image=resources.get_icon('side_bar','room_icon' if is_member else 'join_room_icon',image_size=32), 
                 text=room_name, 
                 command=lambda: self.call(room_name),
-                **self.button_style
-            )
+                **self.button_style,
+            )   
+        room_button.bind
         room_button.pack()#pady=5)
         self.widget_list.insert(pos, [room_name, room_button])
         self.widget_dict.update({room_name: room_button})
