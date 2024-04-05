@@ -195,6 +195,7 @@ if __name__ == '__main__':
     if 'h' in args:
         help()
         exit()
+    print('Public IP:',resolve_public_ip())
     #HOST = '127.0.0.1'  # Loopback address for localhost
     HOST = socket.gethostbyname(socket.gethostname())
     PORT = args.port
