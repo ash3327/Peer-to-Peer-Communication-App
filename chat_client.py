@@ -12,6 +12,8 @@ import resources
 from gui_utils import RoomsPanel
 import base64
 
+from buffer import Buffer
+
 ctk.deactivate_automatic_dpi_awareness()
 warnings.filterwarnings('ignore')
 
@@ -44,6 +46,9 @@ class ChatClient:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((host, port))
         self.rooms = []
+
+        # Buffer setup
+        self.buffer = Buffer()
         
         # Audio setup
         self.paudio = pyaudio.PyAudio()
@@ -162,7 +167,7 @@ class ChatClient:
         try:
             if command['action'] != 'voice':
                 self.log(command, mode=f"O/{command['action']}")
-            self.socket.send(json.dumps(command).encode('utf-8'))
+            self.buffer.send(self.socket, command)
         except ConnectionResetError:
             self.handle_lost_connection()
             return
@@ -252,13 +257,15 @@ class ChatClient:
     def listen(self):
         while True:
             try:
-                response = json.loads(self.socket.recv(4096).decode('utf-8'))
-                if response:
-                    label = response['label']
-                    response.pop('label',None)
-                    self.handle(label, response)
+                self.buffer.read(socket=self.socket, handler=self.handle_listener)
             except socket.error:
                 return
+            
+    # Handler
+    def handle_listener(self, response, _):
+        label = response['label']
+        response.pop('label',None)
+        self.handle(label, response)
 
     # Terminate the current connection.
     def terminate(self):

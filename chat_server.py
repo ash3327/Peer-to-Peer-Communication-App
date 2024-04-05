@@ -8,6 +8,7 @@ import json
 import selectors 
 
 import resources
+from buffer import Buffer
 
 # Networking configuration
 # (Default values if user did not pass in any parameters)
@@ -34,9 +35,11 @@ class ChatServer:
         self.server_socket.bind((host, port))
         self.server_socket.listen()
 
+        # Buffer
+        self.buffers = dict()
+
         # Dictionary to keep track of chat rooms and their participants
         self.chat_rooms = dict()  # Format: {room_name: [client_sockets,...]}
-        self.client_rooms = dict()  # Format: {client_socket: [room_name]}
 
         # List to keep track of active requests
         self.requests = set()
@@ -56,30 +59,10 @@ class ChatServer:
         while True:
             try:
                 # Receive and decode a message, then parse it as JSON
-                message = client_socket.recv(4096).decode('utf-8')
-                if message:
-                    try: 
-                        command = json.loads(message)
-                    except Exception:
-                        self.log(message, mode='E/error', socket=client_socket)
-                        continue
-                    if command['action'] != 'voice':
-                        self.log(command, mode=f"I/{command['action']}", socket=client_socket)
-                    # Execute the appropriate action based on the command received
-                    if command['action'] == 'create':
-                        self.create_room(command['room'], client_socket)
-                    elif command['action'] == 'list':
-                        self.list_rooms(client_socket)
-                    elif command['action'] == 'join':
-                        self.join_room(command['room'], client_socket, command['old_room'])
-                    elif command['action'] == 'exit':
-                        self.remove_client(client_socket, command['room_name'])
-                        self.requests.remove(client_socket)
-                        print('Ended request from: %s port %s' % client_socket.getpeername())
-                        client_socket.close()
-                        return
-                    elif command['action'] == 'voice':
-                        self.voice(command, client_socket) # fyi, command structure is in send_audio_thread
+                self.buffers[client_socket].read(socket=client_socket, handler=self.handle_listener)
+                # message = client_socket.recv(4096).decode('utf-8')
+                # if message:
+                #     self.handle_listener(self, message, client_socket)
 
             # On socket error, close the client's connection
             except socket.error:
@@ -90,6 +73,31 @@ class ChatServer:
                     return
                 except Exception:
                     return
+                
+    # Handler
+    def handle_listener(self, message, client_socket):
+        try: 
+            command = message#json.loads(message)
+        except Exception as e:
+            self.log(message+'\n'+e, mode='E/error', socket=client_socket)
+            return
+        if command['action'] != 'voice':
+            self.log(command, mode=f"I/{command['action']}", socket=client_socket)
+        # Execute the appropriate action based on the command received
+        if command['action'] == 'create':
+            self.create_room(command['room'], client_socket)
+        elif command['action'] == 'list':
+            self.list_rooms(client_socket)
+        elif command['action'] == 'join':
+            self.join_room(command['room'], client_socket, command['old_room'])
+        elif command['action'] == 'exit':
+            self.remove_client(client_socket, command['room_name'])
+            self.requests.remove(client_socket)
+            print('Ended request from: %s port %s' % client_socket.getpeername())
+            client_socket.close()
+            return
+        elif command['action'] == 'voice':
+            self.voice(command, client_socket) # fyi, command structure is in send_audio_thread
     
     # remove client from room if client exits
     def remove_client(self, client_socket, room_name):
@@ -123,10 +131,7 @@ class ChatServer:
             if old_room:
                 self.chat_rooms[old_room].remove(client_socket)
             self.chat_rooms[room_name].append(client_socket)
-            # if client_socket in self.client_rooms:
-            #     old_room = self.client_rooms[client_socket]
-            #     self.chat_rooms[old_room].remove(client_socket)
-            # self.client_rooms[client_socket] = room_name
+            
             self.send_data(client_socket, label='join_room', contents={'status': 'ok','room':room_name})
         else:
             self.send_data(client_socket, label='join_room', contents={
@@ -140,8 +145,9 @@ class ChatServer:
         if label != 'voice':
             self.log(contents, mode=f'O/{label}', socket=client_socket)
         contents.update({'label': label})
-        data = json.dumps(contents).encode('utf-8')
-        client_socket.send(data)        
+        self.buffers[client_socket].send(client_socket, contents)
+        # data = json.dumps(contents).encode('utf-8')
+        # client_socket.send(data)        
 
     # Start the server, accept connections, and spawn threads to handle each client
     def start(self):
@@ -155,6 +161,7 @@ class ChatServer:
         while True:
             client_socket, _ = self.server_socket.accept()
             print('Accepted request from: %s port %s' % client_socket.getpeername())
+            self.buffers.update({client_socket: Buffer()})
             threading.Thread(target=self.handle_client, args=(client_socket,), daemon=True).start()
             self.requests.add(client_socket)
 
