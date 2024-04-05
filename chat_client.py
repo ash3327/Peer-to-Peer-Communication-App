@@ -160,7 +160,8 @@ class ChatClient:
 
     def send_command(self, command):
         try:
-            self.log(command, mode=f"O/{command['action']}")
+            if command['action'] != 'voice':
+                self.log(command, mode=f"O/{command['action']}")
             self.socket.send(json.dumps(command).encode('utf-8'))
         except ConnectionResetError:
             self.handle_lost_connection()
@@ -220,7 +221,8 @@ class ChatClient:
 
     # Handler of packages
     def handle(self, label, response:dict):
-        self.log(response, mode=f'I/{label}')
+        if label != 'voice':
+            self.log(response, mode=f'I/{label}')
         if label == 'list_rooms':
             self.update_rooms_list(response.get('rooms', dict()))
         elif label == 'created_room':

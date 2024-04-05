@@ -63,7 +63,8 @@ class ChatServer:
                     except Exception:
                         self.log(message, mode='E/error', socket=client_socket)
                         continue
-                    self.log(command, mode=f"I/{command['action']}", socket=client_socket)
+                    if command['action'] != 'voice':
+                        self.log(command, mode=f"I/{command['action']}", socket=client_socket)
                     # Execute the appropriate action based on the command received
                     if command['action'] == 'create':
                         self.create_room(command['room'], client_socket)
@@ -122,10 +123,10 @@ class ChatServer:
             if old_room:
                 self.chat_rooms[old_room].remove(client_socket)
             self.chat_rooms[room_name].append(client_socket)
-            if client_socket in self.client_rooms:
-                old_room = self.client_rooms[client_socket]
-                self.chat_rooms[old_room].remove(client_socket)
-            self.client_rooms[client_socket] = room_name
+            # if client_socket in self.client_rooms:
+            #     old_room = self.client_rooms[client_socket]
+            #     self.chat_rooms[old_room].remove(client_socket)
+            # self.client_rooms[client_socket] = room_name
             self.send_data(client_socket, label='join_room', contents={'status': 'ok','room':room_name})
         else:
             self.send_data(client_socket, label='join_room', contents={
@@ -136,7 +137,8 @@ class ChatServer:
     # Send data and encode data sent.
     def send_data(self, client_socket, label:str, contents:dict, mode:str='utf-8'):
         assert mode=='utf-8', 'please write your own handler or modify code'
-        self.log(contents, mode=f'O/{label}', socket=client_socket)
+        if label != 'voice':
+            self.log(contents, mode=f'O/{label}', socket=client_socket)
         contents.update({'label': label})
         data = json.dumps(contents).encode('utf-8')
         client_socket.send(data)        
