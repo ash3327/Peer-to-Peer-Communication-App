@@ -35,7 +35,8 @@ class ChatServer:
         self.server_socket.listen()
 
         # Dictionary to keep track of chat rooms and their participants
-        self.chat_rooms = dict()  # Format: {room_name: [client_sockets]}
+        self.chat_rooms = dict()  # Format: {room_name: [client_sockets,...]}
+        self.client_rooms = dict()  # Format: {client_socket: [room_name]}
 
         # List to keep track of active requests
         self.requests = set()
@@ -88,7 +89,7 @@ class ChatServer:
     # Create a new chat room or inform the host if it already exists
     def create_room(self, room_name, host_socket):
         if room_name not in self.chat_rooms:
-            self.chat_rooms[room_name] = [host_socket]
+            self.chat_rooms[room_name] = []
             self.send_data(host_socket, label='created_room', contents={'status': 'ok','room':room_name})
         else:
             self.send_data(host_socket, label='created_room', contents={'status': 'room already exists','room':room_name})
@@ -102,6 +103,10 @@ class ChatServer:
     def join_room(self, room_name, client_socket):
         if room_name in self.chat_rooms and client_socket not in self.chat_rooms[room_name]:
             self.chat_rooms[room_name].append(client_socket)
+            if client_socket in self.client_rooms:
+                old_room = self.client_rooms[client_socket]
+                self.chat_rooms[old_room].remove(client_socket)
+            self.client_rooms[client_socket] = room_name
             self.send_data(client_socket, label='join_room', contents={'status': 'ok','room':room_name})
         else:
             self.send_data(client_socket, label='join_room', contents={
