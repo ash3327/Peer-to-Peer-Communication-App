@@ -207,6 +207,8 @@ class ChatClient:
                 self.notify_user("Room already joined.", label='neutral')
             else:
                 self.notify_user("Failed to join room.", label='fail')
+        elif label == 'terminate':
+            self.notify_user("Server Terminated.", label='neutral')
 
     # Listening for data packets
     def listen(self):

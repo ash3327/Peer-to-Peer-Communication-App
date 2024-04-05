@@ -77,10 +77,13 @@ class ChatServer:
                         return
             # On socket error, close the client's connection
             except socket.error:
-                self.requests.remove(client_socket)
-                print('Error. Ended request from: %s port %s' % client_socket.getpeername())
-                client_socket.close()
-                return
+                try:
+                    self.requests.remove(client_socket)
+                    print('Error. Ended request from: %s port %s' % client_socket.getpeername())
+                    client_socket.close()
+                    return
+                except Exception:
+                    return
     
     # Create a new chat room or inform the host if it already exists
     def create_room(self, room_name, host_socket):
@@ -137,10 +140,10 @@ class ChatServer:
         if response in ('y', 'yes'):
             print('Terminating all connections.')
             for client_socket in self.requests:
+                self.send_data(client_socket, 'terminate', dict())
                 client_socket.close()
             print('Server terminated.')
             sys.exit()
-        
 
     # Handler of logging
     def log(self, content, mode='D', socket:socket.socket=None):
