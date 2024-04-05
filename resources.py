@@ -7,6 +7,7 @@ _icons = {
     {
         'add_icon': [Image.open("./res/add_icon.png"), None], # Format: [Image.open(<path>), None].
         'join_room_icon': [Image.open("./res/join_group_icon.png"), None],
+        'room_icon': [Image.open("./res/group_icon.png"), None],
         'brand_header': [Image.open("./res/brand_header.png"), None]
     }
 }

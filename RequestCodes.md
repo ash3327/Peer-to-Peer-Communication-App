@@ -19,10 +19,13 @@ This section is mainly handled by the method ```send_data``` on the server side 
 
 *Note that on the client side, ```listen``` function specified that the response passed should be encoded in the format of ```utf-8```. Developers need to CHANGE THIS DESCRIPTION DOCUMENT if he changed this implementation.
 
+> [!NOTE] 
+> Updated ```list_rooms``` response format.
+
 label | usage | params
 --- | --- | ---
 created_room | response to action of creating chat room | status [ok, room already exits]<br>room
-list_rooms | response to request of list of chat rooms | rooms (list)
+list_rooms | response to request of list of chat rooms | rooms __(dict in the format {room_name: is_member})__
 join_room | response to action of joining chat room | status [ok, room not found, room already joined]<br>room
 
 

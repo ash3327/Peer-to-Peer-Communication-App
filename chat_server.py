@@ -92,8 +92,8 @@ class ChatServer:
 
     # List all chat rooms to the requesting client
     def list_rooms(self, client_socket):
-        rooms = list(self.chat_rooms.keys())
-        self.send_data(client_socket, label='list_rooms', contents={'rooms': rooms})
+        cr_info = {room: client_socket in self.chat_rooms[room] for room in self.chat_rooms}
+        self.send_data(client_socket, label='list_rooms', contents={'rooms': cr_info})
     
     # Add a client to an existing chat room
     def join_room(self, room_name, client_socket):

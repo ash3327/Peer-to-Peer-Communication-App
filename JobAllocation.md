@@ -10,6 +10,9 @@
 >    - Note: This error is NOT HANDLED YET. I temporarily skipped those packets that caused problems. This may cause losing of packages in later implementations of functions.
 >    - Thoughts on how to fix: Use a buffer. [Reference: first reply of https://stackoverflow.com/questions/67825653/how-can-i-properly-receive-data-with-a-tcp-python-socket-until-a-delimiter-is-fo]
 
+> [!NOTE]
+> Problem: When a client terminates connection, the reference of the client socket inside the list of room members is not removed.
+
 ## To Do:
 
 1) Chat Room Creation and Joining (In progress)

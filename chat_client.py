@@ -9,6 +9,7 @@ import customtkinter as ctk
 import warnings
 
 import resources
+from gui_utils import RoomsPanel
 
 ctk.deactivate_automatic_dpi_awareness()
 warnings.filterwarnings('ignore')
@@ -118,15 +119,22 @@ class ChatClient:
                 command=create_room_dialog,
                 **button_style
             )
-        create_room_button.pack(pady=5)
+        create_room_button.pack()
 
         ## List rooms button
         # list_rooms_button = tk.Button(self.root, text="List Rooms", command=self.list_rooms)
         # list_rooms_button.pack()
         
         ## Rooms listbox
-        self.rooms_listbox = tk.Listbox(self.submenu_frame)
-        self.rooms_listbox.pack(pady=5)
+        # self.rooms_listbox = tk.Listbox(self.submenu_frame)
+        # self.rooms_listbox.pack(pady=5)
+
+        self.rooms_listbox = RoomsPanel(
+                master=self.submenu_frame, 
+                button_style=button_style, 
+                join_room_command=self.join_room
+            )
+        self.rooms_listbox.pack()
 
         ## Join room button
         join_room_button = ctk.CTkButton(
@@ -134,7 +142,7 @@ class ChatClient:
                 image=resources.get_icon('side_bar','join_room_icon', image_size=32), 
                 **button_style
             )
-        join_room_button.pack(pady=5)
+        join_room_button.pack()
 
     # Alert Message
     def notify_user(self, message:str, duration:int=5000, label='info'):
@@ -156,8 +164,9 @@ class ChatClient:
     def list_rooms(self):
         self.send_command({'action': 'list'})
 
-    def join_room(self):
-        selected_room = self.rooms_listbox.get(tk.ACTIVE)
+    def join_room(self, selected_room=None):
+        if selected_room is None:
+            selected_room = self.rooms_listbox.get(tk.ACTIVE)
         if selected_room:
             self.send_command({'action': 'join', 'room': selected_room})
 
@@ -174,10 +183,10 @@ class ChatClient:
             self.root.destroy()
             return
 
-    def update_rooms_list(self, rooms):
+    def update_rooms_list(self, rooms:dict):
         self.rooms_listbox.delete(0, tk.END)
-        for room in rooms:
-            self.rooms_listbox.insert(tk.END, room)
+        for room, is_member in rooms.items():
+            self.rooms_listbox.insert(tk.END, room, is_member)
 
     def start_audio_streaming(self, room_name):
         # This function would start two threads:
@@ -197,7 +206,7 @@ class ChatClient:
     def handle(self, label, response:dict):
         self.log(response, mode=f'I/{label}')
         if label == 'list_rooms':
-            self.update_rooms_list(response.get('rooms', []))
+            self.update_rooms_list(response.get('rooms', dict()))
         elif label == 'created_room':
             if response['status'] == 'ok':
                 self.notify_user(f"Room '{response['room']}' created successfully.", label='success')
@@ -208,6 +217,7 @@ class ChatClient:
         elif label == 'join_room':
             if response['status'] == 'ok':
                 self.notify_user(f"Joined room '{response['room']}' successfully.", label='success')
+                self.list_rooms()
                 self.start_audio_streaming(response['room'])
             elif response['status'] == 'room already joined':
                 self.notify_user("Room already joined.", label='neutral')
