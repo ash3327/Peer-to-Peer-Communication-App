@@ -133,9 +133,11 @@ class ChatClient:
                 master=self.submenu_frame, 
                 button_style=button_style, 
                 join_room_command=self.join_room,
-                height=self.submenu_frame.winfo_height()
+                height=self.submenu_frame.winfo_height()*.7,
+                fg_color=resources.get_color('side_bar','fill'),
+                border_width=0, corner_radius=0
             )
-        self.rooms_listbox.pack()
+        self.rooms_listbox.pack(pady=10)
 
         ## Join room button
         # join_room_button = ctk.CTkButton(
