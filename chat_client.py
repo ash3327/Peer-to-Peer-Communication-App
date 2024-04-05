@@ -206,7 +206,6 @@ class ChatClient:
                     # command = {'action':'dummy'}
                     self.send_command(command)
 
-
                 except Exception as e:
                     print("Error in send_audio_thread:", e)
                     break

@@ -60,9 +60,6 @@ class ChatServer:
             try:
                 # Receive and decode a message, then parse it as JSON
                 self.buffers[client_socket].read(socket=client_socket, handler=self.handle_listener)
-                # message = client_socket.recv(4096).decode('utf-8')
-                # if message:
-                #     self.handle_listener(self, message, client_socket)
 
             # On socket error, close the client's connection
             except socket.error:
@@ -121,7 +118,7 @@ class ChatServer:
                 self.list_rooms(client_socket)
         else:
             self.send_data(host_socket, label='created_room', contents={'status': 'room already exists','room':room_name})
-    
+
     # List all chat rooms to the requesting client
     def list_rooms(self, client_socket):
         cr_info = {room: client_socket in self.chat_rooms[room] for room in self.chat_rooms}
@@ -147,9 +144,7 @@ class ChatServer:
         if label != 'voice':
             self.log(contents, mode=f'O/{label}', socket=client_socket)
         contents.update({'label': label})
-        self.buffers[client_socket].send(client_socket, contents)
-        # data = json.dumps(contents).encode('utf-8')
-        # client_socket.send(data)        
+        self.buffers[client_socket].send(client_socket, contents)    
 
     # Start the server, accept connections, and spawn threads to handle each client
     def start(self):

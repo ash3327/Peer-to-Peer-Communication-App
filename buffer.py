@@ -15,7 +15,11 @@ class Buffer:
         
         self.buffer = results[-1]
         for response in results[:-1]:
-            handler(json.loads(response), socket)
+            try:
+                res = json.loads(response)
+            except Exception:
+                continue
+            handler(res, socket)
     
     def send(self, socket, command):
-        socket.send((json.dumps(command)+self.sep).encode('utf-8'))
+        socket.send((self.sep+json.dumps(command)+self.sep).encode('utf-8'))
