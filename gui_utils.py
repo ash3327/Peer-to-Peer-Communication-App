@@ -58,7 +58,7 @@ class RoomsPanel(ctk.CTkScrollableFrame):
         self.sublist.pack()
 
         for user in user_list:
-            tk.Label(self.sublist, text=user).pack()
+            tk.Label(self.sublist, text=user, justify='left').pack()
 
     def close_user_list(self):
         if self.sublist:
