@@ -6,7 +6,11 @@ pyaudio
 sounddevice
 soundfile
 RangeSlider
+pillow
+requests
 
-torch
-transformers
-accelerate
+# os
+# shutil
+pydub
+
+customtkinter

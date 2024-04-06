@@ -1,0 +1,25 @@
+
+import json
+
+class Buffer:
+    def __init__(self):
+        self.sep = '\r\n'
+        self.buffer = ''
+
+    def read(self, socket, handler):
+        data = socket.recv(4096).decode('utf-8')
+        if not data:
+            return None
+        self.buffer += data
+        results = self.buffer.split(self.sep)
+        
+        self.buffer = results[-1]
+        for response in results[:-1]:
+            try:
+                res = json.loads(response)
+            except Exception:
+                continue
+            handler(res, socket)
+    
+    def send(self, socket, command):
+        socket.send((self.sep+json.dumps(command)+self.sep).encode('utf-8'))
