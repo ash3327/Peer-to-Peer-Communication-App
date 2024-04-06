@@ -51,9 +51,11 @@ To start the client-side software, perform the following:
 <summary>Functionalities:</summary>
 
 1) Users can click on 'new room' button to enter the name of the room now.
-![alt text](image-1.png)
+![](readme_res/image-1.png)
 2) users can click on the room names to join the room directly now.
-![alt text](image.png)
+![](readme_res/image.png)
+3) Users can mute/unmute his/her voices, and also quit room now.
+![](readme_res/image-2.png)
 
 </details>
 
