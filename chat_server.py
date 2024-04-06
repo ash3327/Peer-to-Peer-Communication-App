@@ -83,7 +83,6 @@ class ChatServer:
             try:
                 # Receive and decode a message, then parse it as JSON
                 self.buffers[client_socket].read(socket=client_socket, handler=self.handle_listener)
-
             # On socket error, close the client's connection
             except socket.error:
                 try:

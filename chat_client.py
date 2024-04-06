@@ -250,7 +250,7 @@ class ChatClient:
         if selected_room is None:
             selected_room = self.rooms_listbox.get(tk.ACTIVE)
         if selected_room:
-            self.record_button.set(is_on=False) # NOW IF THE PERSON WHO INITIATED THE RECORDING QUITS, THE RECORDING WILL STOP.
+            self.record_button.set(is_on=False, exec=False)
             self.send_command({'action': 'join', 'room': selected_room, 'old_room': self.current_room})
             
 
