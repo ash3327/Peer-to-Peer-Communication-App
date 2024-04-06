@@ -1,6 +1,8 @@
 import argparse
 import signal
 import sys
+import os
+import shutil
 
 import socket
 import threading
@@ -9,6 +11,7 @@ import selectors
 
 import resources
 from buffer import Buffer
+from Audio import output_audio
 
 # Networking configuration
 # (Default values if user did not pass in any parameters)
@@ -40,6 +43,24 @@ class ChatServer:
 
         # Dictionary to keep track of chat rooms and their participants
         self.chat_rooms = dict()  # Format: {room_name: [client_sockets,...]}
+
+        # Dictionary to keep track of recording data in each chat room
+        self.recordings = dict() 
+        ''' Format:
+        self.recordings = {
+            'room_name_1': {
+                'client1': 'audio data 1',
+                'client2': 'audio data 2',
+                # ... more clients with their associated audio data
+            },
+            'room_name_2': {
+                'client3': 'audio data 3',
+                'client4': 'audio data 4',
+                # ... more clients with their associated audio data
+            },
+            # ... more rooms with their respective clients and audio data
+        }
+        '''
 
         # List to keep track of active requests
         self.requests = set()
@@ -94,6 +115,11 @@ class ChatServer:
             return
         elif command['action'] == 'voice':
             self.voice(command, client_socket) # fyi, command structure is in send_audio_thread
+        if command['action'] == 'record':
+            if command['room_name'] not in self.recordings:
+                self.start_recording(command['room_name'])
+            else:
+                self.stop_recording(command['room_name'])
     
     # remove client from room if client exits
     def remove_client(self, client_socket, room_name):
@@ -108,8 +134,19 @@ class ChatServer:
             if other_user != client_socket:
                 self.send_data(other_user, label='voice', contents={'audio_data': command['audio_data']})
 
+        # Check if the room is being recorded
+        if room_name in self.recordings:
+            if client_socket not in self.recordings[room_name]:
+                self.recordings[room_name][client_socket] = []
+            self.recordings[room_name][client_socket].append(command['audio_data'])
+
     # Create a new chat room or inform the host if it already exists
     def create_room(self, room_name, host_socket):
+        try:
+            os.mkdir(room_name)
+        except FileExistsError:
+            print(f"The directory '{room_name}' already exists.")\
+        
         if room_name not in self.chat_rooms:
             self.chat_rooms[room_name] = []
             self.send_data(host_socket, label='created_room', contents={'status': 'ok','room':room_name})
@@ -170,6 +207,12 @@ class ChatServer:
             for client_socket in self.requests:
                 self.send_data(client_socket, 'terminate', dict())
                 client_socket.close()
+            print('Deleting chat rooms')
+            for chat_room_dir in self.chat_rooms:
+                try:
+                    shutil.rmtree(chat_room_dir)
+                except OSError as e:
+                    print(f"Error: {e.strerror}")
             print('Server terminated.')
             sys.exit()
 
@@ -179,6 +222,16 @@ class ChatServer:
             if mode == 'I/voice' or mode == 'O/voice':
                 return
             print(mode.ljust(20), '\t:', *socket.getpeername(), '\t:', content)
+
+    def start_recording(self, room_name):
+        self.recordings[room_name] = dict()
+        for user in self.chat_rooms[room_name]:
+            self.recordings[room_name][user] = [] # audio data
+    
+    def stop_recording(self, room_name):
+        # audio processing and saving
+        output_audio(self.recordings, room_name)
+        del self.recordings[room_name]
 
 
 def resolve_public_ip(): 
