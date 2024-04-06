@@ -97,6 +97,13 @@ class ChatClient:
         self.submenu_frame = tk.Frame(self.sidebar, bg=resources.get_color('side_bar','fill'))
         self.submenu_frame.place(relx=0, rely=.25, relwidth=1, relheight=.75)
 
+        ## Chat server details
+        label = tk.Label(
+            self.submenu_frame, 
+            text=f'Server: \t{self.socket.getpeername()[0]}\nPort: \t{self.socket.getpeername()[1]}', 
+            justify='left')
+        label.pack(side='bottom', anchor='w', padx=5, pady=2)
+
         ## Button Styles
         button_style = dict(
             text_color=resources.get_color('side_bar','button','text_color'),
@@ -137,6 +144,9 @@ class ChatClient:
                 border_width=0, corner_radius=0
             )
         self.rooms_listbox.pack(pady=10)
+
+        # ----------- RECORDING PANEL -----------
+
 
     # Alert Message
     def notify_user(self, message:str, duration:int=5000, label='info'):
