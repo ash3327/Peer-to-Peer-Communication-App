@@ -336,7 +336,7 @@ class ChatClient:
         # self.is_streaming = False
         self.quit_button.toggle()
         self.mute_button.set(is_on=False)
-        self.record_button.set(is_on=False)
+        self.record_button.set(is_on=False, exec=False)
         self.send_command({'action': 'quit_room', 'room': self.current_room})
         self.current_room = None
         self.notify_user('Room quitted.', label='success')
