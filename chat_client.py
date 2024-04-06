@@ -9,7 +9,7 @@ import customtkinter as ctk
 import warnings
 
 import resources
-from gui_utils import RoomsPanel, ToggleButton
+from gui_utils import RoomsPanel, ToggleButton, InputDialog
 import base64
 
 from buffer import Buffer
@@ -48,6 +48,9 @@ class ChatClient:
         self.socket.connect((host, port))
         self.rooms = []
 
+        # User settings setup
+        self.user_name = None
+
         # Buffer setup
         self.buffer = Buffer()
         
@@ -65,6 +68,7 @@ class ChatClient:
         self.gui_setup()
         threading.Thread(target=self.listen, daemon=True).start()
         self.list_rooms()
+        self.request_user_name()
         self.root.mainloop()
 
     def gui_setup(self):
@@ -103,13 +107,6 @@ class ChatClient:
         self.submenu_frame = tk.Frame(self.sidebar, bg=resources.get_color('side_bar','fill'))
         self.submenu_frame.place(relx=0, rely=.25, relwidth=1, relheight=.75)
 
-        # Chat server details
-        label = tk.Label(
-            self.submenu_frame, 
-            text=f'Server: \t{self.socket.getpeername()[0]}\nPort: \t{self.socket.getpeername()[1]}', 
-            justify='left', bg=resources.get_color('side_bar','fill'))
-        label.pack(side='bottom', anchor='w', padx=5, pady=2)
-
         # Button Styles
         button_style = dict(
             text_color=resources.get_color('side_bar','button','text_color'),
@@ -120,15 +117,8 @@ class ChatClient:
         
         # Create room button
         def create_room_dialog():
-            self.root.update_idletasks()
-            dialog = ctk.CTkInputDialog(text='Please input a name for your new room:', title='Input Room Name:')
-            dialog.update()
-            screen_size = (self.root.winfo_screenwidth(), self.root.winfo_screenheight()*.9)
-            window_size = (dialog.winfo_width()*1.5, dialog.winfo_height())
-            dialog.tk.eval(f'tk::PlaceWindow {dialog._w} center')
-            dialog.geometry('+%d+%d' % (screen_size[0]/2-window_size[0]/2,screen_size[1]/2-window_size[1]/2))
-            result = dialog.get_input()
-            self.create_room(result)
+            dialog = InputDialog(self.root, text='Please input a name for your new room:', title='Input Room Name:')
+            self.create_room(dialog.get())
 
         create_room_button = ctk.CTkButton(
                 self.submenu_frame, 
@@ -150,6 +140,31 @@ class ChatClient:
                 border_width=0, corner_radius=0
             )
         self.rooms_listbox.pack(pady=10)
+
+        # --------- INFO AND SETTINGS ---------
+        # Chat server details
+        label = tk.Label(
+            self.submenu_frame, 
+            text=f'Server: \t{self.socket.getpeername()[0]}\nPort: \t{self.socket.getpeername()[1]}', 
+            justify='left', bg=resources.get_color('side_bar','fill'))
+        label.pack(side='bottom', anchor='w', padx=5, pady=2)
+
+        # Settings panel
+        self.settings_panel = tk.Frame(self.submenu_frame, bg=resources.get_color('window'))
+        self.settings_panel.pack(side='bottom', anchor='w')
+        
+        # User name button
+        def ask_for_user_name():
+            dialog = InputDialog(self.root, text='Please input a user name.', title='New user name:')
+            self.request_user_name(dialog.get())
+
+        self.user_name_label = ctk.CTkButton(
+            self.settings_panel, 
+            image=resources.get_icon('side_bar', 'user', image_size=32),
+            text=f'User: {self.user_name}',
+            command=ask_for_user_name,
+            **button_style)
+        self.user_name_label.pack()
 
         # ---------------------------------------
         #               MAIN FRAME
@@ -177,7 +192,7 @@ class ChatClient:
             hover_off_color=resources.get_color('record_bar','button_fill','off_state_hover'),
         )
 
-        # Record Buttons
+        # Record Button
         self.record_button = ToggleButton(
                 self.recording_panel, 
                 on_image=resources.get_icon('record','stop_recording',image_size=image_size),
@@ -188,6 +203,7 @@ class ChatClient:
             )
         self.record_button.pack(side='left', padx=5)
 
+        # Mute/Unmute Button
         self.mute_button = ToggleButton(
                 self.recording_panel, 
                 on_image=resources.get_icon('record','mute',image_size=image_size),
@@ -198,6 +214,7 @@ class ChatClient:
             )
         self.mute_button.pack(side='left', padx=5)
 
+        # Quit Button
         self.quit_button = ToggleButton(
                 self.recording_panel, 
                 off_image=resources.get_icon('record','quit_room',image_size=image_size),
@@ -234,6 +251,9 @@ class ChatClient:
             selected_room = self.rooms_listbox.get(tk.ACTIVE)
         if selected_room:
             self.send_command({'action': 'join', 'room': selected_room, 'old_room': self.current_room})
+
+    def request_user_name(self, user_name=None):
+        self.send_command({'action': 'request_user_name', 'user_name': user_name, 'room': self.current_room})
 
     def send_command(self, command):
         try:
@@ -292,13 +312,18 @@ class ChatClient:
         self.notify_user('Stop Recording')
 
     def mute(self):
-        self.notify_user('Muted')
-        self.is_streaming = False
+        if self.is_streaming:
+            self.notify_user('Muted')
+            self.is_streaming = False
 
     def unmute(self):
-        self.notify_user('Unmuted')
-        self.is_streaming = True
-        self.start_audio_streaming(self.current_room)
+        if self.current_room:
+            self.notify_user('Unmuted')
+            self.is_streaming = True
+            self.start_audio_streaming(self.current_room)
+        else:
+            self.mute_button.set(is_on=False)
+            self.notify_user('You cannot unmute without joining a room.', label='fail')
 
     def quit_room(self):
         # self.is_streaming = False
@@ -307,6 +332,13 @@ class ChatClient:
         self.send_command({'action': 'quit_room', 'room': self.current_room})
         self.current_room = None
         self.notify_user('Room quitted.', label='success')
+
+    def update_user_name(self, user_name):
+        self.user_name = user_name
+        self.user_name_label.configure(text=f'User: {self.user_name}')
+
+    def update_room_users(self, room, user_list):
+        self.notify_user(f'Room {room} now has members: {user_list}')
 
     # Handler of logging
     def log(self, content, mode='D'):
@@ -340,6 +372,11 @@ class ChatClient:
                 self.notify_user("Room already joined.", label='neutral')
             else:
                 self.notify_user("Failed to join room.", label='fail')
+        elif label == 'response_user_name':
+            if response['status'] == 'ok':
+                self.update_user_name(response['user_name'])
+        elif label == 'update_room_users':
+            self.update_room_users(response['room'], response['users'])
         elif label == 'terminate':
             self.notify_user("Server Terminated.", label='neutral')
         elif label == 'voice': # receive voice of other people

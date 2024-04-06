@@ -105,3 +105,17 @@ class ToggleButton(ctk.CTkButton):
     def get_config(self):
         return self.on_config if self.is_on else self.off_config
     
+class InputDialog(ctk.CTkInputDialog):
+    def __init__(self, root, text, title):
+        super(InputDialog, self).__init__(text=text, title=title)
+        self.root = root
+
+    def get(self):
+        self.root.update_idletasks()
+        self.update()
+        screen_size = (self.root.winfo_screenwidth(), self.root.winfo_screenheight()*.9)
+        window_size = (self.winfo_width()*1.5, self.winfo_height())
+        self.tk.eval(f'tk::PlaceWindow {self._w} center')
+        self.geometry('+%d+%d' % (screen_size[0]/2-window_size[0]/2,screen_size[1]/2-window_size[1]/2))
+        result = self.get_input()
+        return result

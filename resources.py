@@ -6,9 +6,10 @@ delimiter = '\r\n'
 _icons = {
     'side_bar':
     {
-        'add_icon': [Image.open("./res/add_icon.png")], # Format: [Image.open(<path>), ...].
+        'add_icon': [Image.open("./res/add_icon.png")], # Format: [Image.open(<path>), (...)].
         'join_room_icon': [Image.open("./res/join_group_icon.png")],
         'room_icon': [Image.open("./res/group_icon.png")],
+        'user': [Image.open("./res/user_icon.png")],
         'brand_header': [Image.open("./res/brand_header.png")]
     },
     'record':

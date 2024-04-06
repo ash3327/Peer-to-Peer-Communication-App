@@ -43,6 +43,8 @@ class ChatServer:
 
         # Dictionary to keep track of chat rooms and their participants
         self.chat_rooms = dict()  # Format: {room_name: [client_sockets,...]}
+        self.user_name_cnt = 0
+        self.user_names = dict()
 
         # Dictionary to keep track of recording data in each chat room
         self.recordings = dict() 
@@ -107,6 +109,8 @@ class ChatServer:
             self.list_rooms(client_socket)
         elif command['action'] == 'join':
             self.join_room(command['room'], client_socket, command['old_room'])
+        elif command['action'] == 'request_user_name':
+            self.assign_user_name(command['user_name'], client_socket, command['room'])
         elif command['action'] == 'quit_room':
             self.quit_room(command['room'], client_socket)
         elif command['action'] == 'exit':
@@ -128,6 +132,7 @@ class ChatServer:
     def remove_client(self, client_socket, room_name):
         if room_name:
             self.chat_rooms[room_name].remove(client_socket)
+        self.user_names.pop(client_socket, None)
 
     # receive voice from user and send voice to other user
     def voice(self, command, client_socket):
@@ -174,10 +179,37 @@ class ChatServer:
             self.chat_rooms[room_name].append(client_socket)
             
             self.send_data(client_socket, label='join_room', contents={'status': 'ok','room':room_name})
+            self.update_room_users(room_name)
         else:
             self.send_data(client_socket, label='join_room', contents={
                     'status': 'room already joined' if room_name in self.chat_rooms else 'room not found',
                     'room':room_name
+                })
+            
+    # Update the room members to other users
+    def update_room_users(self, room_name):
+        if room_name not in self.chat_rooms:
+            return
+        user_names = [self.user_names[user] for user in self.chat_rooms[room_name]]
+        for client_socket in self.chat_rooms[room_name]:
+            self.send_data(client_socket, label='update_room_users', contents={
+                    'room':room_name,
+                    'users':user_names
+                })
+            
+    # Assign a user name to client
+    def assign_user_name(self, user_name, client_socket, room_name):
+        if user_name is None:
+            self.user_name_cnt += 1
+            user_name = f'User{self.user_name_cnt:06}'
+        username_is_valid = user_name not in self.user_names.values()
+        
+        if username_is_valid:
+            self.user_names.update({client_socket: user_name})
+            self.update_room_users(room_name)
+        self.send_data(client_socket, label='response_user_name', contents={
+                    'status': 'ok' if username_is_valid else 'conflict',
+                    'user_name':user_name
                 })
             
     # Remove the client from the chat room

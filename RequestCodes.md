@@ -13,6 +13,7 @@ list | requests a list of chat rooms
 join | user joins chat room | room
 quit_room | quit the current room | room
 voice | stream audio | audio data, room name
+request_user_name | request for changing a user name | user_name<br>room
 exit | inform the server to terminate the connection thread
 
 ## Server -> Client
@@ -27,6 +28,8 @@ created_room | response to action of creating chat room | status [ok, room alrea
 list_rooms | response to request of list of chat rooms | rooms (dict in the format {room_name: is_member})
 join_room | response to action of joining chat room | status [ok, room not found, room already joined]<br>room
 voice | stream audio | audio data
+response_user_name | response for changing a user name | status<br>user_name
+update_room_users | update the list of users in that room | room<br>users
 terminate | notify the client that the server is going offline
 
 
