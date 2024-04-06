@@ -168,7 +168,7 @@ class ChatClient:
             if command['action'] != 'voice':
                 self.log(command, mode=f"O/{command['action']}")
             self.buffer.send(self.socket, command)
-        except ConnectionResetError:
+        except (ConnectionResetError, ConnectionAbortedError):
             self.handle_lost_connection()
             return
         if command['action'] == 'exit':
