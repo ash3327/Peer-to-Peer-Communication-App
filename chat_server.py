@@ -115,11 +115,11 @@ class ChatServer:
             return
         elif command['action'] == 'voice':
             self.voice(command, client_socket) # fyi, command structure is in send_audio_thread
-        if command['action'] == 'record':
-            if command['room_name'] not in self.recordings:
-                self.start_recording(command['room_name'])
-            else:
-                self.stop_recording(command['room_name'])
+        # if command['action'] == 'record':
+        #     if command['room_name'] not in self.recordings:
+        #         self.start_recording(command['room_name'])
+        #     else:
+        #         self.stop_recording(command['room_name'])
     
     # remove client from room if client exits
     def remove_client(self, client_socket, room_name):
