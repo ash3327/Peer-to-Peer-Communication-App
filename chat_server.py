@@ -122,10 +122,11 @@ class ChatServer:
         elif command['action'] == 'voice':
             self.voice(command, client_socket) # fyi, command structure is in send_audio_thread
 
-        if command['action'] == 'record':
+        elif command['action'] == 'record_start':
             if command['room_name'] not in self.recordings:
                 self.start_recording(command['room_name'])
-            else:
+        elif command['action'] == 'record_end':
+            if command['room_name'] in self.recordings:
                 self.stop_recording(command['room_name'])
     
     # remove client from room if client exits
@@ -261,17 +262,24 @@ class ChatServer:
         if self.show_log:
             if mode == 'I/voice' or mode == 'O/voice':
                 return
-            print(mode.ljust(20), '\t:', *socket.getpeername(), '\t:', content)
+            print(mode.ljust(20), '\t:', *socket.getpeername() if socket else [None], '\t:', content)
 
     def start_recording(self, room_name):
+        for member_socket in self.chat_rooms[room_name]:
+            self.send_data(member_socket, label='record_start', contents={'room_name': room_name})
         self.recordings[room_name] = dict()
         for user in self.chat_rooms[room_name]:
             self.recordings[room_name][user] = [] # audio data
     
     def stop_recording(self, room_name):
         # audio processing and saving
-        output_audio(self.recordings, room_name)
-        del self.recordings[room_name]
+        for member_socket in self.chat_rooms[room_name]:
+            self.send_data(member_socket, label='record_end', contents={'room_name': room_name})
+        try:
+            output_audio(self.recordings, room_name)
+            del self.recordings[room_name]
+        except Exception as e:
+            self.log(e, mode='E/error')
 
 
 def resolve_public_ip(): 

@@ -12,8 +12,10 @@ create | create chat room | room
 list | requests a list of chat rooms
 join | user joins chat room | room
 quit_room | quit the current room | room
-voice | stream audio | audio data, room name
 request_user_name | request for changing a user name | user_name<br>room
+voice | stream audio | audio_data, room_name
+record_start | start recording | room_name
+record_end | end recording | room_name
 exit | inform the server to terminate the connection thread
 
 ## Server -> Client
@@ -30,6 +32,8 @@ join_room | response to action of joining chat room | status [ok, room not found
 voice | stream audio | audio data
 response_user_name | response for changing a user name | status<br>user_name
 update_room_users | update the list of users in that room | room<br>users
+record_start | start recording notification | room_name
+record_end | end recording notification | room_name
 terminate | notify the client that the server is going offline
 
 

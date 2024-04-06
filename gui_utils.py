@@ -89,10 +89,11 @@ class ToggleButton(ctk.CTkButton):
     def toggle(self):
         self.set(not self.is_on)
 
-    def set(self, is_on:bool):
+    def set(self, is_on:bool, exec:bool=True):
         self.is_on = is_on
         self.refresh_outlook()
-        self.exec(self.on_command if self.is_on else self.off_command)
+        if exec:
+            self.exec(self.on_command if self.is_on else self.off_command)
 
     def exec(self, command):
         if command:

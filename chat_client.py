@@ -250,7 +250,9 @@ class ChatClient:
         if selected_room is None:
             selected_room = self.rooms_listbox.get(tk.ACTIVE)
         if selected_room:
+            self.record_button.set(is_on=False) # NOW IF THE PERSON WHO INITIATED THE RECORDING QUITS, THE RECORDING WILL STOP.
             self.send_command({'action': 'join', 'room': selected_room, 'old_room': self.current_room})
+            
 
     def request_user_name(self, user_name=None):
         self.send_command({'action': 'request_user_name', 'user_name': user_name, 'room': self.current_room})
@@ -304,12 +306,17 @@ class ChatClient:
         # self.play_audio(audio_data)
 
     def start_recording(self):
-        '''NOT IMPLEMENTED'''
-        self.notify_user('Start Recording')
+        if self.current_room:
+            self.notify_user('Start Recording')
+            self.send_command({'action': 'record_start', 'room_name': self.current_room})
+        else:
+            self.record_button.set(is_on=False)
+            self.notify_user('You cannot record without joining a room.', label='fail')
 
     def stop_recording(self):
-        '''NOT IMPLEMENTED'''
-        self.notify_user('Stop Recording')
+        if self.current_room:
+            self.notify_user('Stop Recording')
+            self.send_command({'action': 'record_end', 'room_name': self.current_room})
 
     def mute(self):
         if self.is_streaming:
@@ -329,6 +336,7 @@ class ChatClient:
         # self.is_streaming = False
         self.quit_button.toggle()
         self.mute_button.set(is_on=False)
+        self.record_button.set(is_on=False)
         self.send_command({'action': 'quit_room', 'room': self.current_room})
         self.current_room = None
         self.notify_user('Room quitted.', label='success')
@@ -372,11 +380,18 @@ class ChatClient:
                 self.notify_user("Room already joined.", label='neutral')
             else:
                 self.notify_user("Failed to join room.", label='fail')
+
         elif label == 'response_user_name':
             if response['status'] == 'ok':
                 self.update_user_name(response['user_name'])
         elif label == 'update_room_users':
             self.update_room_users(response['room'], response['users'])
+
+        elif label == 'record_start':
+            self.record_button.set(is_on=True, exec=False)
+        elif label == 'record_end':
+            self.record_button.set(is_on=False, exec=False)
+
         elif label == 'terminate':
             self.notify_user("Server Terminated.", label='neutral')
         elif label == 'voice': # receive voice of other people
