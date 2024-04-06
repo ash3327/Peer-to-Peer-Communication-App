@@ -178,6 +178,8 @@ class ChatClient:
                 self.recording_panel, 
                 on_image=resources.get_icon('record','stop_recording',image_size=image_size),
                 off_image=resources.get_icon('record','start_recording',image_size=image_size),
+                on_command=self.start_recording,
+                off_command=self.stop_recording,
                 **button_configs
             )
         self.record_button.pack(side='left', padx=5)
@@ -186,6 +188,8 @@ class ChatClient:
                 self.recording_panel, 
                 on_image=resources.get_icon('record','unmute',image_size=image_size),
                 off_image=resources.get_icon('record','mute',image_size=image_size),
+                on_command=self.mute, 
+                off_command=self.unmute, 
                 **button_configs
             )
         self.mute_button.pack(side='left', padx=5)
@@ -263,6 +267,22 @@ class ChatClient:
         audio_data = base64.b64decode(audio_data)
         self.audio_stream.write(audio_data)
         # self.play_audio(audio_data)
+
+    def start_recording(self):
+        '''NOT IMPLEMENTED'''
+        self.notify_user('Start Recording')
+
+    def stop_recording(self):
+        '''NOT IMPLEMENTED'''
+        self.notify_user('Stop Recording')
+
+    def mute(self):
+        '''NOT IMPLEMENTED'''
+        self.notify_user('Muted')
+
+    def unmute(self):
+        '''NOT IMPLEMENTED'''
+        self.notify_user('Unmuted')
 
     # Handler of logging
     def log(self, content, mode='D'):
