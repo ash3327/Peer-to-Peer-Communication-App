@@ -1,6 +1,8 @@
 import argparse
 import signal
 import sys
+import os
+import shutil
 
 import socket
 import threading
@@ -9,6 +11,7 @@ import selectors
 
 import resources
 from buffer import Buffer
+from Audio import output_audio
 
 # Networking configuration
 # (Default values if user did not pass in any parameters)
@@ -40,6 +43,26 @@ class ChatServer:
 
         # Dictionary to keep track of chat rooms and their participants
         self.chat_rooms = dict()  # Format: {room_name: [client_sockets,...]}
+        self.user_name_cnt = 0
+        self.user_names = dict()
+
+        # Dictionary to keep track of recording data in each chat room
+        self.recordings = dict() 
+        ''' Format:
+        self.recordings = {
+            'room_name_1': {
+                'client1': 'audio data 1',
+                'client2': 'audio data 2',
+                # ... more clients with their associated audio data
+            },
+            'room_name_2': {
+                'client3': 'audio data 3',
+                'client4': 'audio data 4',
+                # ... more clients with their associated audio data
+            },
+            # ... more rooms with their respective clients and audio data
+        }
+        '''
 
         # List to keep track of active requests
         self.requests = set()
@@ -60,7 +83,6 @@ class ChatServer:
             try:
                 # Receive and decode a message, then parse it as JSON
                 self.buffers[client_socket].read(socket=client_socket, handler=self.handle_listener)
-
             # On socket error, close the client's connection
             except socket.error:
                 try:
@@ -78,8 +100,7 @@ class ChatServer:
         except Exception as e:
             self.log(message+'\n'+e, mode='E/error', socket=client_socket)
             return
-        if command['action'] != 'voice':
-            self.log(command, mode=f"I/{command['action']}", socket=client_socket)
+        self.log(command, mode=f"I/{command['action']}", socket=client_socket)
         # Execute the appropriate action based on the command received
         if command['action'] == 'create':
             self.create_room(command['room'], client_socket)
@@ -87,6 +108,10 @@ class ChatServer:
             self.list_rooms(client_socket)
         elif command['action'] == 'join':
             self.join_room(command['room'], client_socket, command['old_room'])
+        elif command['action'] == 'request_user_name':
+            self.assign_user_name(command['user_name'], client_socket, command['room'])
+        elif command['action'] == 'quit_room':
+            self.quit_room(command['room'], client_socket)
         elif command['action'] == 'exit':
             self.remove_client(client_socket, command['room_name'])
             self.requests.remove(client_socket)
@@ -95,22 +120,39 @@ class ChatServer:
             return
         elif command['action'] == 'voice':
             self.voice(command, client_socket) # fyi, command structure is in send_audio_thread
+
+        elif command['action'] == 'record_start':
+            if command['room_name'] not in self.recordings:
+                self.start_recording(command['room_name'])
+        elif command['action'] == 'record_end':
+            if command['room_name'] in self.recordings:
+                self.stop_recording(command['room_name'])
     
     # remove client from room if client exits
     def remove_client(self, client_socket, room_name):
         if room_name:
             self.chat_rooms[room_name].remove(client_socket)
+        self.user_names.pop(client_socket, None)
 
     # receive voice from user and send voice to other user
     def voice(self, command, client_socket):
         # print(f'audio data:{command["audio_data"]}')
-        room_name = command['room_name']
-        for other_user in self.chat_rooms[room_name]:
-            if other_user != client_socket:
-                self.send_data(other_user, label='voice', contents={'audio_data': command['audio_data']})
+        try:
+            room_name = command['room_name']
+            for other_user in self.chat_rooms[room_name]:
+                if other_user != client_socket:
+                    self.send_data(other_user, label='voice', contents={'audio_data': command['audio_data']})
+
+            # Check if the room is being recorded
+            if room_name in self.recordings:
+                if client_socket not in self.recordings[room_name]:
+                    self.recordings[room_name][client_socket] = []
+                self.recordings[room_name][client_socket].append(command['audio_data'])
+        except Exception:
+            pass
 
     # Create a new chat room or inform the host if it already exists
-    def create_room(self, room_name, host_socket):
+    def create_room(self, room_name, host_socket):        
         if room_name not in self.chat_rooms:
             self.chat_rooms[room_name] = []
             self.send_data(host_socket, label='created_room', contents={'status': 'ok','room':room_name})
@@ -132,17 +174,50 @@ class ChatServer:
             self.chat_rooms[room_name].append(client_socket)
             
             self.send_data(client_socket, label='join_room', contents={'status': 'ok','room':room_name})
+            self.update_room_users(room_name)
         else:
             self.send_data(client_socket, label='join_room', contents={
                     'status': 'room already joined' if room_name in self.chat_rooms else 'room not found',
                     'room':room_name
                 })
+            
+    # Update the room members to other users
+    def update_room_users(self, room_name):
+        if room_name is None or room_name not in self.chat_rooms:
+            return
+        user_names = [self.user_names[user] for user in self.chat_rooms[room_name]]
+        for client_socket in self.chat_rooms[room_name]:
+            self.send_data(client_socket, label='update_room_users', contents={
+                    'room':room_name,
+                    'users':user_names
+                })
+            
+    # Assign a user name to client
+    def assign_user_name(self, user_name, client_socket, room_name):
+        if user_name is None:
+            self.user_name_cnt += 1
+            user_name = f'User{self.user_name_cnt:06}'
+        username_is_valid = user_name not in self.user_names.values()
+        
+        if username_is_valid:
+            self.user_names.update({client_socket: user_name})
+            self.update_room_users(room_name)
+        self.send_data(client_socket, label='response_user_name', contents={
+                    'status': 'ok' if username_is_valid else 'conflict',
+                    'user_name':user_name
+                })
+            
+    # Remove the client from the chat room
+    def quit_room(self, room_name, client_socket):
+        if room_name:
+            self.chat_rooms[room_name].remove(client_socket)
+            self.list_rooms(client_socket)
+            self.update_room_users(room_name)
 
     # Send data and encode data sent.
     def send_data(self, client_socket, label:str, contents:dict, mode:str='utf-8'):
         assert mode=='utf-8', 'please write your own handler or modify code'
-        if label != 'voice':
-            self.log(contents, mode=f'O/{label}', socket=client_socket)
+        self.log(contents, mode=f'O/{label}', socket=client_socket)
         contents.update({'label': label})
         self.buffers[client_socket].send(client_socket, contents)    
 
@@ -172,13 +247,38 @@ class ChatServer:
             for client_socket in self.requests:
                 self.send_data(client_socket, 'terminate', dict())
                 client_socket.close()
+            print('Deleting chat rooms')
+            for chat_room_dir in self.chat_rooms:
+                try:
+                    shutil.rmtree(chat_room_dir)
+                except OSError as e:
+                    print(f"Error: {e.strerror}")
             print('Server terminated.')
             sys.exit()
 
     # Handler of logging
     def log(self, content, mode='D', socket:socket.socket=None):
         if self.show_log:
-            print(mode.ljust(20), '\t:', *socket.getpeername(), '\t:', content)
+            if mode == 'I/voice' or mode == 'O/voice':
+                return
+            print(mode.ljust(20), '\t:', *socket.getpeername() if socket else [None], '\t:', content)
+
+    def start_recording(self, room_name):
+        for member_socket in self.chat_rooms[room_name]:
+            self.send_data(member_socket, label='record_start', contents={'room_name': room_name})
+        self.recordings[room_name] = dict()
+        for user in self.chat_rooms[room_name]:
+            self.recordings[room_name][user] = [] # audio data
+    
+    def stop_recording(self, room_name):
+        # audio processing and saving
+        for member_socket in self.chat_rooms[room_name]:
+            self.send_data(member_socket, label='record_end', contents={'room_name': room_name})
+        try:
+            output_audio(self.recordings, room_name)
+            del self.recordings[room_name]
+        except Exception as e:
+            self.log(e, mode='E/error')
 
 
 def resolve_public_ip(): 

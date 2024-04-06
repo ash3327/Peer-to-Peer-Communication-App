@@ -22,10 +22,10 @@ class RoomsPanel(ctk.CTkScrollableFrame):
                 image=resources.get_icon('side_bar','room_icon' if is_member else 'join_room_icon',image_size=32), 
                 text=room_name, 
                 command=lambda: self.call(room_name),
+                bg_color=self.get_color(is_active=False),
                 **self.button_style,
             )   
-        room_button.bind
-        room_button.pack()#pady=5)
+        room_button.pack()
         self.widget_list.insert(pos, [room_name, room_button])
         self.widget_dict.update({room_name: room_button})
 
@@ -37,7 +37,10 @@ class RoomsPanel(ctk.CTkScrollableFrame):
         if room_name not in self.widget_dict:
             self.insert(tk.END, room_name, is_member)
         else:
-            self.widget_dict[room_name].configure(image=resources.get_icon('side_bar','room_icon' if is_member else 'join_room_icon',image_size=32))
+            self.widget_dict[room_name].configure(
+                image=resources.get_icon('side_bar','room_icon' if is_member else 'join_room_icon',image_size=32),
+                fg_color=self.get_color(is_active=is_member)
+            )
 
     def remove(self, room_name):
         for room_info in self.widget_list:
@@ -64,6 +67,56 @@ class RoomsPanel(ctk.CTkScrollableFrame):
         if pos == tk.ACTIVE:
             return self.active
         return self.widget_list[pos]
-        
-
     
+    def get_color(self, is_active=False):
+        return resources.get_color('side_bar', 'button', 'active' if is_active else 'inactive')
+    
+class ToggleButton(ctk.CTkButton):
+    RESET = 'reset'
+
+    def __init__(
+        self, master, on_image=None, off_image=None, on_command=None, off_command=None,
+        on_color=None, off_color=None, hover_on_color=None, hover_off_color=None, 
+        is_on=False, **kwargs
+    ):
+        self.on_config = dict(image=on_image, fg_color=on_color, hover_color=hover_on_color)
+        self.off_config = dict(image=off_image, fg_color=off_color, hover_color=hover_off_color)
+        self.on_command = on_command
+        self.off_command = off_command
+        self.is_on = is_on
+        super(ToggleButton, self).__init__(master, **self.get_config(), **kwargs, command=self.toggle)
+
+    def toggle(self):
+        self.set(not self.is_on)
+
+    def set(self, is_on:bool, exec:bool=True):
+        self.is_on = is_on
+        self.refresh_outlook()
+        if exec:
+            self.exec(self.on_command if self.is_on else self.off_command)
+
+    def exec(self, command):
+        if command:
+            command()
+
+    # set state
+    def refresh_outlook(self):
+        self.configure(**self.get_config())
+
+    def get_config(self):
+        return self.on_config if self.is_on else self.off_config
+    
+class InputDialog(ctk.CTkInputDialog):
+    def __init__(self, root, text, title):
+        super(InputDialog, self).__init__(text=text, title=title)
+        self.root = root
+
+    def get(self):
+        self.root.update_idletasks()
+        self.update()
+        screen_size = (self.root.winfo_screenwidth(), self.root.winfo_screenheight()*.9)
+        window_size = (self.winfo_width()*1.5, self.winfo_height())
+        self.tk.eval(f'tk::PlaceWindow {self._w} center')
+        self.geometry('+%d+%d' % (screen_size[0]/2-window_size[0]/2,screen_size[1]/2-window_size[1]/2))
+        result = self.get_input()
+        return result

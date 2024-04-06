@@ -8,4 +8,8 @@ soundfile
 RangeSlider
 pillow
 
+# os
+# shutil
+pydub
+
 customtkinter
