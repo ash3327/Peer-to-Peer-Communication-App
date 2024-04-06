@@ -55,10 +55,13 @@ class RoomsPanel(ctk.CTkScrollableFrame):
             self.sublist.destroy()
 
         self.sublist = tk.Frame(self.frame_dict[room_name])
-        self.sublist.pack()
+        self.sublist.pack(anchor='w',padx=(40,0))
 
         for user in user_list:
-            tk.Label(self.sublist, text=user).pack()
+            fr = tk.Frame(self.sublist)
+            tk.Label(fr, image=resources.get_icon('side_bar','user',image_size=16)).pack(side='left')
+            tk.Label(fr, text=user).pack(side='left')
+            fr.pack(side='top',anchor='w',pady=2)
 
     def close_user_list(self):
         if self.sublist:
