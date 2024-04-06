@@ -7,8 +7,8 @@ sounddevice
 soundfile
 RangeSlider
 pillow
-os
-shutil
+#os
+#shutil
 pydub
 
 customtkinter
