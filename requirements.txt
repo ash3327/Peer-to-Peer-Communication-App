@@ -7,6 +7,7 @@ sounddevice
 soundfile
 RangeSlider
 pillow
+requests
 
 # os
 # shutil
