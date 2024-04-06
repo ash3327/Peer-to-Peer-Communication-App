@@ -152,12 +152,7 @@ class ChatServer:
             pass
 
     # Create a new chat room or inform the host if it already exists
-    def create_room(self, room_name, host_socket):
-        try:
-            os.mkdir(room_name)
-        except FileExistsError:
-            print(f"The directory '{room_name}' already exists.")\
-        
+    def create_room(self, room_name, host_socket):        
         if room_name not in self.chat_rooms:
             self.chat_rooms[room_name] = []
             self.send_data(host_socket, label='created_room', contents={'status': 'ok','room':room_name})
