@@ -9,16 +9,22 @@ class RoomsPanel(ctk.CTkScrollableFrame):
         super().__init__(master, **kwargs)
         self.widget_list = list()
         self.widget_dict = dict()
+        self.frame_dict = dict()
+        self.sublist = None
         self.button_style = button_style
         self.join_room_command = join_room_command
         self.active = None
+        self.i = 0
 
     def insert(self, pos, room_name, is_member=False):
         if pos == tk.END:
             pos = len(self.widget_list)
 
+        room_frame = tk.Frame(self)
+        room_frame.pack()
+
         room_button = ctk.CTkButton(
-                self, 
+                room_frame, 
                 image=resources.get_icon('side_bar','room_icon' if is_member else 'join_room_icon',image_size=32), 
                 text=room_name, 
                 command=lambda: self.call(room_name),
@@ -28,6 +34,7 @@ class RoomsPanel(ctk.CTkScrollableFrame):
         room_button.pack()
         self.widget_list.insert(pos, [room_name, room_button])
         self.widget_dict.update({room_name: room_button})
+        self.frame_dict.update({room_name: room_frame})
 
     def call(self, room_name):
         self.active = room_name
@@ -41,6 +48,20 @@ class RoomsPanel(ctk.CTkScrollableFrame):
                 image=resources.get_icon('side_bar','room_icon' if is_member else 'join_room_icon',image_size=32),
                 fg_color=self.get_color(is_active=is_member)
             )
+
+    def show_user_list(self, room_name, user_list):
+        if self.sublist:
+            self.sublist.pack_forget()
+            self.sublist.destroy()
+
+        self.sublist = tk.Frame(self.frame_dict[room_name])
+        self.sublist.pack()
+
+        for user in user_list:
+            tk.Label(self.sublist, text=user).pack()
+
+    def close_user_list(self, room_name, user_list):
+        pass
 
     def remove(self, room_name):
         for room_info in self.widget_list:

@@ -175,6 +175,7 @@ class ChatServer:
             
             self.send_data(client_socket, label='join_room', contents={'status': 'ok','room':room_name})
             self.update_room_users(room_name)
+            self.update_room_users(old_room)
         else:
             self.send_data(client_socket, label='join_room', contents={
                     'status': 'room already joined' if room_name in self.chat_rooms else 'room not found',

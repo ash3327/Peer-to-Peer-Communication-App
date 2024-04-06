@@ -349,6 +349,7 @@ class ChatClient:
 
     def update_room_users(self, room, user_list):
         self.notify_user(f'Room {room} now has members: {user_list}')
+        self.rooms_listbox.show_user_list(room, user_list)
 
     # Handler of logging
     def log(self, content, mode='D'):
