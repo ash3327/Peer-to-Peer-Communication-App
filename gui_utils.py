@@ -64,6 +64,23 @@ class RoomsPanel(ctk.CTkScrollableFrame):
         if pos == tk.ACTIVE:
             return self.active
         return self.widget_list[pos]
-        
+    
+class ToggleButton(ctk.CTkButton):
+    def __init__(self, master, on_image, off_image, on_color=None, off_color=None, 
+                 hover_on_color=None, hover_off_color=None, is_on=False, **kwargs):
+        self.on_config = dict(image=on_image, fg_color=on_color, hover_color=hover_on_color)
+        self.off_config = dict(image=off_image, fg_color=off_color, hover_color=hover_off_color)
+        self.is_on = is_on
+        super(ToggleButton, self).__init__(master, **self.get_config(), **kwargs, command=self.toggle)
 
+    def toggle(self):
+        self.is_on = not self.is_on
+        self.refresh_outlook()
+
+    # set state
+    def refresh_outlook(self):
+        self.configure(**self.get_config())
+
+    def get_config(self):
+        return self.on_config if self.is_on else self.off_config
     

@@ -9,7 +9,7 @@ import customtkinter as ctk
 import warnings
 
 import resources
-from gui_utils import RoomsPanel
+from gui_utils import RoomsPanel, ToggleButton
 import base64
 
 from buffer import Buffer
@@ -67,7 +67,9 @@ class ChatClient:
         self.root.mainloop()
 
     def gui_setup(self):
-        # -------------- BACKGROUND -------------
+        # ---------------------------------------
+        #              BACKGROUND
+        # ---------------------------------------
         window_size = (800, 600)
         screen_size = (self.root.winfo_screenwidth(), self.root.winfo_screenheight()*.9)
         self.root.geometry('%dx%d' % window_size)
@@ -75,11 +77,13 @@ class ChatClient:
         self.root.geometry('+%d+%d' % (screen_size[0]/2-window_size[0]/2,screen_size[1]/2-window_size[1]/2))
         self.root.configure(bg=resources.get_color('window'))
 
-        # --------------- SIDEBAR ---------------
-        # Sidebar Frame
+        # ---------------------------------------
+        #             SIDEBAR FRAME
+        # ---------------------------------------
         self.sidebar = tk.Frame(self.root, bg=resources.get_color('side_bar','fill'))
         self.sidebar.place(relx=0, rely=0, relwidth=.25, relheight=1)
 
+        # --------------- HEADER ----------------
         # Header
         self.brand_frame = tk.Frame(self.sidebar)
         self.brand_frame.place(relx=0, rely=0, relwidth=1, relheight=.2)
@@ -93,18 +97,19 @@ class ChatClient:
                         ))
         logo.pack()
 
+        # ------------ SUBMENU BARS ------------
         # Submenu Bars
         self.submenu_frame = tk.Frame(self.sidebar, bg=resources.get_color('side_bar','fill'))
         self.submenu_frame.place(relx=0, rely=.25, relwidth=1, relheight=.75)
 
-        ## Chat server details
+        # Chat server details
         label = tk.Label(
             self.submenu_frame, 
             text=f'Server: \t{self.socket.getpeername()[0]}\nPort: \t{self.socket.getpeername()[1]}', 
             justify='left')
         label.pack(side='bottom', anchor='w', padx=5, pady=2)
 
-        ## Button Styles
+        # Button Styles
         button_style = dict(
             text_color=resources.get_color('side_bar','button','text_color'),
             width=self.sidebar.winfo_width(),
@@ -112,7 +117,7 @@ class ChatClient:
             anchor='w'
         )
         
-        ## Create room button
+        # Create room button
         def create_room_dialog():
             self.root.update_idletasks()
             dialog = ctk.CTkInputDialog(text='Please input a name for your new room:', title='Input Room Name:')
@@ -133,7 +138,7 @@ class ChatClient:
             )
         create_room_button.pack()
         
-        ## Rooms listbox
+        # Rooms listbox
         self.submenu_frame.update()
         self.rooms_listbox = RoomsPanel(
                 master=self.submenu_frame, 
@@ -145,8 +150,45 @@ class ChatClient:
             )
         self.rooms_listbox.pack(pady=10)
 
-        # ----------- RECORDING PANEL -----------
+        # ---------------------------------------
+        #               MAIN FRAME
+        # ---------------------------------------  
+        self.main_frame = tk.Frame(self.root, bg=resources.get_color('window'))
+        self.main_frame.place(relx=.25, rely=0, relwidth=.75, relheight=1)
 
+        # ----------- RECORDING PANEL -----------
+        self.recording_panel = tk.Frame(self.main_frame, bg=resources.get_color('record_bar','fill'))
+        self.recording_panel.pack(side='bottom', pady=10)
+        
+        # Button configs
+        image_size=28
+        button_configs = dict(
+            text=None,
+            width=40, height=40,
+            corner_radius=20,
+            border_width=0,
+            on_color=resources.get_color('record_bar','button_fill','on_state'),
+            off_color=resources.get_color('record_bar','button_fill','off_state'),
+            hover_on_color=resources.get_color('record_bar','button_fill','on_state_hover'),
+            hover_off_color=resources.get_color('record_bar','button_fill','off_state_hover'),
+        )
+
+        # Record Buttons
+        self.record_button = ToggleButton(
+                self.recording_panel, 
+                on_image=resources.get_icon('record','stop_recording',image_size=image_size),
+                off_image=resources.get_icon('record','start_recording',image_size=image_size),
+                **button_configs
+            )
+        self.record_button.pack(side='left', padx=5)
+
+        self.mute_button = ToggleButton(
+                self.recording_panel, 
+                on_image=resources.get_icon('record','unmute',image_size=image_size),
+                off_image=resources.get_icon('record','mute',image_size=image_size),
+                **button_configs
+            )
+        self.mute_button.pack(side='left', padx=5)
 
     # Alert Message
     def notify_user(self, message:str, duration:int=5000, label='info'):
