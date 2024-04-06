@@ -11,6 +11,7 @@ label | usage | params
 create | create chat room | room
 list | requests a list of chat rooms
 join | user joins chat room | room
+quit_room | quit the current room
 voice | stream audio | audio data, room name
 exit | inform the server to terminate the connection thread
 

@@ -24,8 +24,7 @@ class RoomsPanel(ctk.CTkScrollableFrame):
                 command=lambda: self.call(room_name),
                 **self.button_style,
             )   
-        room_button.bind
-        room_button.pack()#pady=5)
+        room_button.pack()
         self.widget_list.insert(pos, [room_name, room_button])
         self.widget_dict.update({room_name: room_button})
 
@@ -66,6 +65,8 @@ class RoomsPanel(ctk.CTkScrollableFrame):
         return self.widget_list[pos]
     
 class ToggleButton(ctk.CTkButton):
+    RESET = 'reset'
+
     def __init__(
         self, master, on_image=None, off_image=None, on_command=None, off_command=None,
         on_color=None, off_color=None, hover_on_color=None, hover_off_color=None, 

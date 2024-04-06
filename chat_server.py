@@ -107,6 +107,8 @@ class ChatServer:
             self.list_rooms(client_socket)
         elif command['action'] == 'join':
             self.join_room(command['room'], client_socket, command['old_room'])
+        elif command['action'] == 'quit_room':
+            self.quit_room(command['room'], client_socket)
         elif command['action'] == 'exit':
             self.remove_client(client_socket, command['room_name'])
             self.requests.remove(client_socket)
@@ -130,16 +132,19 @@ class ChatServer:
     # receive voice from user and send voice to other user
     def voice(self, command, client_socket):
         # print(f'audio data:{command["audio_data"]}')
-        room_name = command['room_name']
-        for other_user in self.chat_rooms[room_name]:
-            if other_user != client_socket:
-                self.send_data(other_user, label='voice', contents={'audio_data': command['audio_data']})
+        try:
+            room_name = command['room_name']
+            for other_user in self.chat_rooms[room_name]:
+                if other_user != client_socket:
+                    self.send_data(other_user, label='voice', contents={'audio_data': command['audio_data']})
 
-        # Check if the room is being recorded
-        if room_name in self.recordings:
-            if client_socket not in self.recordings[room_name]:
-                self.recordings[room_name][client_socket] = []
-            self.recordings[room_name][client_socket].append(command['audio_data'])
+            # Check if the room is being recorded
+            if room_name in self.recordings:
+                if client_socket not in self.recordings[room_name]:
+                    self.recordings[room_name][client_socket] = []
+                self.recordings[room_name][client_socket].append(command['audio_data'])
+        except Exception:
+            pass
 
     # Create a new chat room or inform the host if it already exists
     def create_room(self, room_name, host_socket):
@@ -174,6 +179,12 @@ class ChatServer:
                     'status': 'room already joined' if room_name in self.chat_rooms else 'room not found',
                     'room':room_name
                 })
+            
+    # Remove the client from the chat room
+    def quit_room(self, room_name, client_socket):
+        if room_name:
+            self.chat_rooms[room_name].remove(client_socket)
+            self.list_rooms(client_socket)
 
     # Send data and encode data sent.
     def send_data(self, client_socket, label:str, contents:dict, mode:str='utf-8'):

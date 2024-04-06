@@ -55,6 +55,7 @@ class ChatClient:
         self.paudio = pyaudio.PyAudio()
         self.audio_stream = self.paudio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, output=True, frames_per_buffer=CHUNK)
         self.audio_stream_thread = None
+        self.is_streaming = False
 
         # Start the Window
         self.root = ctk.CTk()
@@ -257,7 +258,7 @@ class ChatClient:
             self.audio_stream_thread = threading.Thread(target=self.send_audio_thread, daemon=True).start()
 
     def send_audio_thread(self):
-        while True:
+        while self.is_streaming:
             if self.current_room:
                 try:
                     # Read audio data from the microphone
@@ -291,16 +292,20 @@ class ChatClient:
         self.notify_user('Stop Recording')
 
     def mute(self):
-        '''NOT IMPLEMENTED'''
         self.notify_user('Muted')
+        self.is_streaming = False
 
     def unmute(self):
-        '''NOT IMPLEMENTED'''
         self.notify_user('Unmuted')
+        self.is_streaming = True
+        self.start_audio_streaming(self.current_room)
 
     def quit_room(self):
-        '''NOT IMPLEMENTED'''
-        self.notify_user('Quit Room')
+        self.is_streaming = False
+        self.quit_button.toggle()
+        self.send_command({'action': 'quit_room', 'room': self.current_room})
+        self.current_room = None
+        self.notify_user('Room quitted.', label='success')
 
     # Handler of logging
     def log(self, content, mode='D'):
