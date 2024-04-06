@@ -106,7 +106,7 @@ class ChatClient:
         label = tk.Label(
             self.submenu_frame, 
             text=f'Server: \t{self.socket.getpeername()[0]}\nPort: \t{self.socket.getpeername()[1]}', 
-            justify='left')
+            justify='left', bg=resources.get_color('side_bar','fill'))
         label.pack(side='bottom', anchor='w', padx=5, pady=2)
 
         # Button Styles
