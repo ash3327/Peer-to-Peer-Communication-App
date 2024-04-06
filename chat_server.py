@@ -78,8 +78,7 @@ class ChatServer:
         except Exception as e:
             self.log(message+'\n'+e, mode='E/error', socket=client_socket)
             return
-        if command['action'] != 'voice':
-            self.log(command, mode=f"I/{command['action']}", socket=client_socket)
+        self.log(command, mode=f"I/{command['action']}", socket=client_socket)
         # Execute the appropriate action based on the command received
         if command['action'] == 'create':
             self.create_room(command['room'], client_socket)
@@ -141,8 +140,7 @@ class ChatServer:
     # Send data and encode data sent.
     def send_data(self, client_socket, label:str, contents:dict, mode:str='utf-8'):
         assert mode=='utf-8', 'please write your own handler or modify code'
-        if label != 'voice':
-            self.log(contents, mode=f'O/{label}', socket=client_socket)
+        self.log(contents, mode=f'O/{label}', socket=client_socket)
         contents.update({'label': label})
         self.buffers[client_socket].send(client_socket, contents)    
 
@@ -178,6 +176,8 @@ class ChatServer:
     # Handler of logging
     def log(self, content, mode='D', socket:socket.socket=None):
         if self.show_log:
+            if mode == 'I/voice' or mode == 'O/voice':
+                return
             print(mode.ljust(20), '\t:', *socket.getpeername(), '\t:', content)
 
 

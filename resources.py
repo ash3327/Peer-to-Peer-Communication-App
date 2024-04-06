@@ -15,7 +15,7 @@ _icons = {
         'start_recording': [Image.open("./res/start_recording.png"), None],
         'stop_recording': [Image.open("./res/stop_recording.png"), None],
         'start_playback': [Image.open("./res/start_playback.png"), None],
-        'start_playback': [Image.open("./res/stop_playback.png"), None],
+        'start_playback': [Image.open("./res/stop_playback.jpg"), None],
     }
 }
 

@@ -214,14 +214,15 @@ class ChatClient:
     # Handler of logging
     def log(self, content, mode='D'):
         if self.show_log:
+            if mode == 'I/voice' or mode == 'O/voice':
+                return
             print(mode.ljust(20), '\t:', content)
         elif mode.startswith('D') or mode.startswith('E'):
             print(content)
 
     # Handler of packages
     def handle(self, label, response:dict):
-        if label != 'voice':
-            self.log(response, mode=f'I/{label}')
+        self.log(response, mode=f'I/{label}')
         if label == 'list_rooms':
             self.update_rooms_list(response.get('rooms', dict()))
         elif label == 'created_room':
