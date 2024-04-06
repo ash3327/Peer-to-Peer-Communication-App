@@ -156,7 +156,9 @@ class ChatClient:
         # User name button
         def ask_for_user_name():
             dialog = InputDialog(self.root, text='Please input a user name.', title='New user name:')
-            self.request_user_name(dialog.get())
+            user_name = dialog.get()
+            if user_name:
+                self.request_user_name(user_name)
 
         self.user_name_label = ctk.CTkButton(
             self.settings_panel, 
