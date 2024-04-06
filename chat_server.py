@@ -188,7 +188,7 @@ class ChatServer:
             
     # Update the room members to other users
     def update_room_users(self, room_name):
-        if room_name not in self.chat_rooms:
+        if room_name is None or room_name not in self.chat_rooms:
             return
         user_names = [self.user_names[user] for user in self.chat_rooms[room_name]]
         for client_socket in self.chat_rooms[room_name]:
