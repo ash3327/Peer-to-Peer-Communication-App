@@ -233,7 +233,7 @@ class ChatClient:
             self.notif.pack_forget()
         self.notif = notif = ctk.CTkLabel(self.root, text=message, 
                              bg_color=resources.get_color('message',label), 
-                             padx=10, pady=10, corner_radius=20)
+                             padx=10, pady=10, corner_radius=20, text_color='black')
         notif.pack(expand=True)
         notif.after(duration, lambda: notif.pack_forget())
 
