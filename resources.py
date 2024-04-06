@@ -18,6 +18,7 @@ _icons = {
         'start_playback': [Image.open("./res/stop_playback.jpg")],
         'mute': [Image.open("./res/mute.png")],
         'unmute': [Image.open("./res/unmute.png")],
+        'quit_room': [Image.open("./res/quit_room.png")]
     }
 }
 
@@ -43,6 +44,8 @@ _colors = {
             'off_state': 'gray',
             'on_state_hover': 'snow2',
             'off_state_hover': 'dim gray',
+            'quit_room': 'orange red',
+            'quit_room_hover': 'OrangeRed2'
         }
     }
 }

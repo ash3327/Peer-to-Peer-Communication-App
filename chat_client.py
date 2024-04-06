@@ -162,11 +162,14 @@ class ChatClient:
         
         # Button configs
         image_size=28
-        button_configs = dict(
+        basic_button_configs = dict(
             text=None,
             width=40, height=40,
             corner_radius=20,
             border_width=0,
+        )
+        button_configs = dict(
+            **basic_button_configs,
             on_color=resources.get_color('record_bar','button_fill','on_state'),
             off_color=resources.get_color('record_bar','button_fill','off_state'),
             hover_on_color=resources.get_color('record_bar','button_fill','on_state_hover'),
@@ -186,13 +189,24 @@ class ChatClient:
 
         self.mute_button = ToggleButton(
                 self.recording_panel, 
-                on_image=resources.get_icon('record','unmute',image_size=image_size),
-                off_image=resources.get_icon('record','mute',image_size=image_size),
-                on_command=self.mute, 
-                off_command=self.unmute, 
+                on_image=resources.get_icon('record','mute',image_size=image_size),
+                off_image=resources.get_icon('record','unmute',image_size=image_size),
+                on_command=self.unmute, 
+                off_command=self.mute, 
                 **button_configs
             )
         self.mute_button.pack(side='left', padx=5)
+
+        self.quit_button = ToggleButton(
+                self.recording_panel, 
+                off_image=resources.get_icon('record','quit_room',image_size=image_size),
+                on_command=self.quit_room, 
+                off_color=resources.get_color('record_bar','button_fill','quit_room'),
+                hover_off_color=resources.get_color('record_bar','button_fill','quit_room_hover'),
+                **basic_button_configs,
+                on_color='blue', hover_on_color='blue' # useless but need to be there
+            )
+        self.quit_button.pack(side='left', padx=5)
 
     # Alert Message
     def notify_user(self, message:str, duration:int=5000, label='info'):
@@ -283,6 +297,10 @@ class ChatClient:
     def unmute(self):
         '''NOT IMPLEMENTED'''
         self.notify_user('Unmuted')
+
+    def quit_room(self):
+        '''NOT IMPLEMENTED'''
+        self.notify_user('Quit Room')
 
     # Handler of logging
     def log(self, content, mode='D'):

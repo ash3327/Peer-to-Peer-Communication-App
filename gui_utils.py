@@ -67,7 +67,7 @@ class RoomsPanel(ctk.CTkScrollableFrame):
     
 class ToggleButton(ctk.CTkButton):
     def __init__(
-        self, master, on_image, off_image, on_command=None, off_command=None,
+        self, master, on_image=None, off_image=None, on_command=None, off_command=None,
         on_color=None, off_color=None, hover_on_color=None, hover_off_color=None, 
         is_on=False, **kwargs
     ):
