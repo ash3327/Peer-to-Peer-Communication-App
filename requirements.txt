@@ -7,8 +7,13 @@ sounddevice
 soundfile
 RangeSlider
 pillow
+<<<<<<< HEAD
 #os
 #shutil
+=======
+os
+shutil
+>>>>>>> 7a918d7 (recording function added, gui not done, function not tested)
 pydub
 
 customtkinter
