@@ -339,6 +339,7 @@ class ChatClient:
         self.quit_button.toggle()
         self.mute_button.set(is_on=False)
         self.record_button.set(is_on=False, exec=False)
+        self.rooms_listbox.close_user_list()
         self.send_command({'action': 'quit_room', 'room': self.current_room})
         self.current_room = None
         self.notify_user('Room quitted.', label='success')
@@ -348,7 +349,7 @@ class ChatClient:
         self.user_name_label.configure(text=f'User: {self.user_name}')
 
     def update_room_users(self, room, user_list):
-        self.notify_user(f'Room {room} now has members: {user_list}')
+        # self.notify_user(f'Room {room} now has members: {user_list}')
         self.rooms_listbox.show_user_list(room, user_list)
 
     # Handler of logging

@@ -60,8 +60,10 @@ class RoomsPanel(ctk.CTkScrollableFrame):
         for user in user_list:
             tk.Label(self.sublist, text=user).pack()
 
-    def close_user_list(self, room_name, user_list):
-        pass
+    def close_user_list(self):
+        if self.sublist:
+            self.sublist.pack_forget()
+            self.sublist.destroy()
 
     def remove(self, room_name):
         for room_info in self.widget_list:
