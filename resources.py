@@ -1,5 +1,6 @@
 from tkinter import PhotoImage
 from PIL import Image, ImageTk
+import customtkinter as ctk
 
 delimiter = '\r\n'
 _icons = {
@@ -27,7 +28,9 @@ _colors = {
     'side_bar': {
         'fill': 'snow2',
         'button': {
-            'text_color': 'black'
+            'text_color': 'black',
+            'inactive': ctk.ThemeManager.theme["CTkButton"]["fg_color"],
+            'active': 'SteelBlue2'
         }
     },
     'message': {

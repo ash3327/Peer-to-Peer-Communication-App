@@ -22,6 +22,7 @@ class RoomsPanel(ctk.CTkScrollableFrame):
                 image=resources.get_icon('side_bar','room_icon' if is_member else 'join_room_icon',image_size=32), 
                 text=room_name, 
                 command=lambda: self.call(room_name),
+                bg_color=self.get_color(is_active=False),
                 **self.button_style,
             )   
         room_button.pack()
@@ -36,7 +37,10 @@ class RoomsPanel(ctk.CTkScrollableFrame):
         if room_name not in self.widget_dict:
             self.insert(tk.END, room_name, is_member)
         else:
-            self.widget_dict[room_name].configure(image=resources.get_icon('side_bar','room_icon' if is_member else 'join_room_icon',image_size=32))
+            self.widget_dict[room_name].configure(
+                image=resources.get_icon('side_bar','room_icon' if is_member else 'join_room_icon',image_size=32),
+                fg_color=self.get_color(is_active=is_member)
+            )
 
     def remove(self, room_name):
         for room_info in self.widget_list:
@@ -64,6 +68,9 @@ class RoomsPanel(ctk.CTkScrollableFrame):
             return self.active
         return self.widget_list[pos]
     
+    def get_color(self, is_active=False):
+        return resources.get_color('side_bar', 'button', 'active' if is_active else 'inactive')
+    
 class ToggleButton(ctk.CTkButton):
     RESET = 'reset'
 
@@ -80,7 +87,10 @@ class ToggleButton(ctk.CTkButton):
         super(ToggleButton, self).__init__(master, **self.get_config(), **kwargs, command=self.toggle)
 
     def toggle(self):
-        self.is_on = not self.is_on
+        self.set(not self.is_on)
+
+    def set(self, is_on:bool):
+        self.is_on = is_on
         self.refresh_outlook()
         self.exec(self.on_command if self.is_on else self.off_command)
 
