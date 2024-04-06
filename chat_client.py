@@ -41,6 +41,7 @@ class ChatClient:
         # Settings
         self.show_log = show_log
         self.current_room = None # for removing from room if exit program
+        self.error_state = False
 
         # Socket setup
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -265,11 +266,15 @@ class ChatClient:
     # Terminate the current connection.
     def terminate(self):
         self.send_command({'action': 'exit', 'room_name': self.current_room})
+        if self.error_state:
+            exit()
 
     # Handler in case of losing connection.
     def handle_lost_connection(self):
-        self.notify_user('Lost Connection to server.', label='fail')
-        self.root.after(4000, lambda: exit())
+        if not self.error_state:
+            self.notify_user('Lost Connection to server.', label='fail')
+            self.error_state = True
+            self.root.after(4000, lambda: exit())
 
 if __name__ == '__main__':
     args, help = parse_args()
