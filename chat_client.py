@@ -384,6 +384,8 @@ class ChatClient:
         elif label == 'response_user_name':
             if response['status'] == 'ok':
                 self.update_user_name(response['user_name'])
+            elif response['status'] == 'conflict':
+                self.notify_user('This username has been used.', label='fail')
         elif label == 'update_room_users':
             self.update_room_users(response['room'], response['users'])
 
