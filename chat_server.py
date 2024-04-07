@@ -372,4 +372,5 @@ if __name__ == '__main__':
     HOST = socket.gethostbyname(socket.gethostname())
     PORT = args.port
     RATE = args.rate
+    SILENT_DURATION_MS = 1000 * CHUNK / RATE
     ChatServer(HOST, PORT, show_log='log' in args).start()
