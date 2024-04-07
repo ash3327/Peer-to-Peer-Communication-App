@@ -29,8 +29,7 @@ To install this package, perform the following:
 >
 >    If your OS is MacOS, you can also download it from the official download page: https://ffmpeg.org/download.html#build-mac.
 >
->    Note that if you downloaded the executable from the website, you'll have to manually move it (```ffmpeg.exe``` in the unzipped ```bin``` subfolder) to your script's root directory (in the SAME layer as other .py files) (or add it to PATH).
->   </details>
+>    Note that if you downloaded the executable from the website, you'll have to manually move it (```ffmpeg.exe``` in the unzipped ```bin``` subfolder) to your script's root directory (in the SAME layer as other .py files) (or add it to PATH).</details>
 
 Note:
 
