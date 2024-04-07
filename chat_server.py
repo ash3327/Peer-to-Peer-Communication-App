@@ -8,10 +8,17 @@ import socket
 import threading
 import json
 import selectors 
+import base64
+import time
 
 import resources
 from buffer import Buffer
 from Audio import output_audio
+from pydub import AudioSegment
+
+from chat_client import CHUNK, CHANNELS, RATE
+SAMPLE_WIDTH = 2
+SILENT_DURATION_MS = 1000 * CHUNK / RATE
 
 # Networking configuration
 # (Default values if user did not pass in any parameters)
@@ -43,6 +50,8 @@ class ChatServer:
 
         # Dictionary to keep track of chat rooms and their participants
         self.chat_rooms = dict()  # Format: {room_name: [client_sockets,...]}
+        self.chat_rooms_start_time = dict() # Format: {room_name: room's start time}
+        self.chat_rooms_audio_overlay = dict() # Format: {room_name: dict(time: dict(client: audio_data))}
         self.user_name_cnt = 0
         self.user_names = dict()
 
@@ -50,17 +59,9 @@ class ChatServer:
         self.recordings = dict() 
         ''' Format:
         self.recordings = {
-            'room_name_1': {
-                'client1': 'audio data 1',
-                'client2': 'audio data 2',
-                # ... more clients with their associated audio data
-            },
-            'room_name_2': {
-                'client3': 'audio data 3',
-                'client4': 'audio data 4',
-                # ... more clients with their associated audio data
-            },
-            # ... more rooms with their respective clients and audio data
+            'room_name_1': AudioSegment(),
+            'room_name_2': AudioSegment(),
+            # ... more rooms with their respective AudioSegment
         }
         '''
 
@@ -134,27 +135,78 @@ class ChatServer:
             self.chat_rooms[room_name].remove(client_socket)
         self.user_names.pop(client_socket, None)
 
+    def append_recording(self, last_chunk_data, room_name):
+        try:
+            audio = AudioSegment.silent(duration=SILENT_DURATION_MS, frame_rate=RATE,)
+            for user in self.chat_rooms[room_name].copy():
+                if user in last_chunk_data:
+                    user_voice = last_chunk_data[user]
+                    audio = audio.overlay(user_voice)
+
+            self.recordings[room_name] += audio
+        except KeyError as e:
+            raise e
+
+    def output_last_chunk_to_client(self, room_name):
+        last_chunk =  list(self.chat_rooms_audio_overlay[room_name].keys())
+        if last_chunk:
+            last_chunk = last_chunk[0]
+            try:
+                last_chunk_data = self.chat_rooms_audio_overlay[room_name].pop(last_chunk)
+            except KeyError as e:
+                return
+            if room_name in self.recordings:
+                self.append_recording(last_chunk_data, room_name)
+
+            for user in self.chat_rooms[room_name]:
+                audio = AudioSegment.silent(duration=SILENT_DURATION_MS, frame_rate=RATE,)
+                for other_user in self.chat_rooms[room_name]:
+                    try:
+                        if other_user != user:
+                            other_user_voice = last_chunk_data[other_user]
+                            audio = audio.overlay(other_user_voice)
+                    except KeyError: # KeyError is the person is muted / no audio signal
+                        pass
+                audio_data = base64.b64encode(audio.raw_data).decode('utf-8')
+                self.send_data(user, label='voice', contents={'audio_data': audio_data})
+
+            return last_chunk
+        else:
+            return None
+
+
+    # calculate chunk number of a specific time in a specific room
+    def calculate_chunk(self, time, room_name):
+        time_passed = time - self.chat_rooms_start_time[room_name]
+        chunk_time = CHUNK / RATE
+        return int(time_passed // chunk_time)
+
     # receive voice from user and send voice to other user
     def voice(self, command, client_socket):
         # print(f'audio data:{command["audio_data"]}')
         try:
             room_name = command['room_name']
-            for other_user in self.chat_rooms[room_name]:
-                if other_user != client_socket:
-                    self.send_data(other_user, label='voice', contents={'audio_data': command['audio_data']})
+            if not room_name:
+                return
+            audio_data = base64.b64decode(command['audio_data'])
+            current_chunk = self.calculate_chunk(time.time(), room_name)
+            last_chunk = None
 
-            # Check if the room is being recorded
-            if room_name in self.recordings:
-                if client_socket not in self.recordings[room_name]:
-                    self.recordings[room_name][client_socket] = []
-                self.recordings[room_name][client_socket].append(command['audio_data'])
-        except Exception:
-            pass
+            if current_chunk not in self.chat_rooms_audio_overlay[room_name]: # New chunk
+                last_chunk = self.output_last_chunk_to_client(room_name)
+                self.chat_rooms_audio_overlay[room_name][current_chunk] = {}
+
+            self.chat_rooms_audio_overlay[room_name][current_chunk][client_socket] = AudioSegment(data=audio_data, sample_width=SAMPLE_WIDTH, frame_rate=RATE, channels=CHANNELS)
+
+        except Exception as e:
+            raise e
 
     # Create a new chat room or inform the host if it already exists
     def create_room(self, room_name, host_socket):        
         if room_name not in self.chat_rooms:
             self.chat_rooms[room_name] = []
+            self.chat_rooms_start_time[room_name] = time.time()
+            self.chat_rooms_audio_overlay[room_name] = dict()
             self.send_data(host_socket, label='created_room', contents={'status': 'ok','room':room_name})
             for client_socket in self.requests:
                 self.list_rooms(client_socket)
@@ -267,16 +319,15 @@ class ChatServer:
     def start_recording(self, room_name):
         for member_socket in self.chat_rooms[room_name]:
             self.send_data(member_socket, label='record_start', contents={'room_name': room_name})
-        self.recordings[room_name] = dict()
-        for user in self.chat_rooms[room_name]:
-            self.recordings[room_name][user] = [] # audio data
+        # Empty audio init
+        self.recordings[room_name] = AudioSegment(data=b"", sample_width=SAMPLE_WIDTH, frame_rate=RATE, channels=CHANNELS)
     
     def stop_recording(self, room_name):
         # audio processing and saving
         for member_socket in self.chat_rooms[room_name]:
             self.send_data(member_socket, label='record_end', contents={'room_name': room_name})
         try:
-            output_audio(self.recordings, room_name)
+            output_audio(self.recordings[room_name], room_name)
             del self.recordings[room_name]
         except Exception as e:
             self.log(e, mode='E/error')

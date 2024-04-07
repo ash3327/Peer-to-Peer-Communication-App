@@ -304,6 +304,7 @@ class ChatClient:
     def play_audio_thread(self, audio_data):
         # Play the received audio data
         audio_data = base64.b64decode(audio_data)
+        # print(audio_data[:20])
         self.audio_stream.write(audio_data)
         # self.play_audio(audio_data)
 
