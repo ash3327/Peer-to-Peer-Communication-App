@@ -31,6 +31,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Compress or decompress files using LZW algorithm')
     parser.add_argument('-p', '--port', type=int, metavar="{1024..49151}", default=PORT, help='The port number in the range 1024-49151.')
     parser.add_argument('-l', '--log', default=argparse.SUPPRESS, action='store_true', help='Whether all communications are logged.')
+    parser.add_argument('-r', '--rate', type=int, default=RATE, help='The audio sample rate, normally 22050 or 44100.')
     return parser.parse_args(), parser.print_help
 
 # Define the ChatServer class to manage chat rooms and client connections
@@ -69,6 +70,7 @@ class ChatServer:
         self.requests = set()
 
         print('Initializing Chat Server at IP [{}] and port [{}]'.format(*self.get_ip()))
+        print('Accepted Audio Sample Rate:', RATE)
         
     # Get the IP address of the server
     def get_ip(self):
@@ -133,6 +135,9 @@ class ChatServer:
         elif command['action'] == 'record_end':
             if command['room_name'] in self.recordings:
                 self.stop_recording(command['room_name'])
+
+        elif command['action'] == 'request_sample_rate':
+            self.send_data(client_socket, label='response_sample_rate', contents={'sample_rate':RATE})
     
     # remove client from room if client exits
     def remove_client(self, client_socket, room_name=None):
@@ -366,4 +371,5 @@ if __name__ == '__main__':
     #HOST = '127.0.0.1'  # Loopback address for localhost
     HOST = socket.gethostbyname(socket.gethostname())
     PORT = args.port
+    RATE = args.rate
     ChatServer(HOST, PORT, show_log='log' in args).start()

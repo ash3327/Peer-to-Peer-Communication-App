@@ -69,6 +69,7 @@ class ChatClient:
         threading.Thread(target=self.listen, daemon=True).start()
         self.list_rooms()
         self.request_user_name()
+        self.request_sample_rate()
         self.root.mainloop()
 
     def gui_setup(self):
@@ -259,6 +260,9 @@ class ChatClient:
     def request_user_name(self, user_name=None):
         self.send_command({'action': 'request_user_name', 'user_name': user_name, 'room': self.current_room})
 
+    def request_sample_rate(self):
+        self.send_command({'action': 'request_sample_rate'})
+
     def send_command(self, command):
         try:
             if command['action'] != 'voice':
@@ -399,10 +403,14 @@ class ChatClient:
         elif label == 'record_end':
             self.record_button.set(is_on=False, exec=False)
 
-        elif label == 'terminate':
-            self.notify_user("Server Terminated.", label='neutral')
         elif label == 'voice': # receive voice of other people
             threading.Thread(target=self.play_audio_thread, args=(response['audio_data'],), daemon=True).start()
+        elif label == 'response_sample_rate':
+            self.mute_button.set(is_on=False)
+            RATE = response['sample_rate']
+
+        elif label == 'terminate':
+            self.notify_user("Server Terminated.", label='neutral')
 
     # Listening for data packets
     def listen(self):
