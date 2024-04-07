@@ -136,7 +136,7 @@ class ChatClient:
                 master=self.submenu_frame, 
                 button_style=button_style, 
                 join_room_command=self.join_room,
-                height=self.submenu_frame.winfo_height()*.7,
+                height=self.submenu_frame.winfo_height()*.65,
                 fg_color=resources.get_color('side_bar','fill'),
                 border_width=0, corner_radius=0
             )
@@ -144,11 +144,13 @@ class ChatClient:
 
         # --------- INFO AND SETTINGS ---------
         # Chat server details
-        label = tk.Label(
+        self.info_label = tk.Label(
             self.submenu_frame, 
-            text=f'Server: \t{self.socket.getpeername()[0]}\nPort: \t{self.socket.getpeername()[1]}', 
+            text=f'Server: \t{self.socket.getpeername()[0]}\n'+\
+                 f'Port: \t{self.socket.getpeername()[1]}'+\
+                 f'Sample Rate: \t{RATE}', 
             justify='left', bg=resources.get_color('side_bar','fill'))
-        label.pack(side='bottom', anchor='w', padx=5, pady=2)
+        self.info_label.pack(side='bottom', anchor='w', padx=5, pady=2)
 
         # Settings panel
         self.settings_panel = tk.Frame(self.submenu_frame, bg=resources.get_color('window'))
@@ -167,7 +169,7 @@ class ChatClient:
             text=f'User: {self.user_name}',
             command=ask_for_user_name,
             **button_style)
-        self.user_name_label.pack()
+        self.user_name_label.pack(side='bottom')
 
         # ---------------------------------------
         #               MAIN FRAME
@@ -357,6 +359,20 @@ class ChatClient:
         # self.notify_user(f'Room {room} now has members: {user_list}')
         self.rooms_listbox.show_user_list(room, user_list)
 
+    def set_sample_rate(self, sample_rate):
+        global RATE
+        self.mute_button.set(is_on=False)
+        RATE = sample_rate
+
+        self.info_label.configure(
+            text=f'Server: \t{self.socket.getpeername()[0]}\n'+\
+                 f'Port: \t{self.socket.getpeername()[1]}\n'+\
+                 f'Rate: \t{RATE}'
+        )
+        if self.audio_stream:
+            self.audio_stream.close()
+        self.audio_stream = self.paudio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, output=True, frames_per_buffer=CHUNK)
+
     # Handler of logging
     def log(self, content, mode='D'):
         if self.show_log:
@@ -406,8 +422,7 @@ class ChatClient:
         elif label == 'voice': # receive voice of other people
             threading.Thread(target=self.play_audio_thread, args=(response['audio_data'],), daemon=True).start()
         elif label == 'response_sample_rate':
-            self.mute_button.set(is_on=False)
-            RATE = response['sample_rate']
+            self.set_sample_rate(response['sample_rate'])
 
         elif label == 'terminate':
             self.notify_user("Server Terminated.", label='neutral')
