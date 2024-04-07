@@ -87,14 +87,15 @@ class ChatServer:
             # On socket error, close the client's connection
             except socket.error as e1:
                 try:
+                    self.remove_client(client_socket)
                     self.requests.remove(client_socket)
                     print('Error. Ended request from: %s port %s' % client_socket.getpeername())
                     client_socket.close()
-                    print('Error:',e1)
+                    print('Error 93:',e1)
                     return
                 except Exception as e:
                     # raise e
-                    print('Error:',e)
+                    print('Error 97:',e)
                     return
                 
     # Handler
@@ -134,9 +135,12 @@ class ChatServer:
                 self.stop_recording(command['room_name'])
     
     # remove client from room if client exits
-    def remove_client(self, client_socket, room_name):
+    def remove_client(self, client_socket, room_name=None):
         if room_name:
-            self.chat_rooms[room_name].remove(client_socket)
+            self.quit_room(room_name, client_socket)
+        else:
+            for room in self.chat_rooms:
+                self.quit_room(room_name, client_socket)
         self.user_names.pop(client_socket, None)
 
     def append_recording(self, last_chunk_data, room_name):
@@ -266,7 +270,7 @@ class ChatServer:
             
     # Remove the client from the chat room
     def quit_room(self, room_name, client_socket):
-        if room_name:
+        if room_name and client_socket in self.chat_rooms[room_name]:
             self.chat_rooms[room_name].remove(client_socket)
             self.list_rooms(client_socket)
             self.update_room_users(room_name)
