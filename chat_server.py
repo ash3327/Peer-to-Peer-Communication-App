@@ -85,13 +85,16 @@ class ChatServer:
                 # Receive and decode a message, then parse it as JSON
                 self.buffers[client_socket].read(socket=client_socket, handler=self.handle_listener)
             # On socket error, close the client's connection
-            except socket.error:
+            except socket.error as e1:
                 try:
                     self.requests.remove(client_socket)
                     print('Error. Ended request from: %s port %s' % client_socket.getpeername())
                     client_socket.close()
+                    print('Error:',e1)
                     return
-                except Exception:
+                except Exception as e:
+                    # raise e
+                    print('Error:',e)
                     return
                 
     # Handler
@@ -100,6 +103,7 @@ class ChatServer:
             command = message#json.loads(message)
         except Exception as e:
             self.log(message+'\n'+e, mode='E/error', socket=client_socket)
+            raise e
             return
         self.log(command, mode=f"I/{command['action']}", socket=client_socket)
         # Execute the appropriate action based on the command received
@@ -154,7 +158,7 @@ class ChatServer:
             try:
                 last_chunk_data = self.chat_rooms_audio_overlay[room_name].pop(last_chunk)
             except KeyError as e:
-                return
+                raise e
             if room_name in self.recordings:
                 self.append_recording(last_chunk_data, room_name)
 
@@ -331,6 +335,7 @@ class ChatServer:
             del self.recordings[room_name]
         except Exception as e:
             self.log(e, mode='E/error')
+            raise e
 
 
 def resolve_public_ip(): 

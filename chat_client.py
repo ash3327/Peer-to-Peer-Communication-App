@@ -23,7 +23,7 @@ SERVER_HOST = '10.13.252.5'#'127.0.0.1'#'server_ip'  # Replace with the server's
 SERVER_PORT = 12345
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
-RATE = 22050
+RATE = 5000#22050
 CHUNK = 1024
 
 '''
@@ -420,6 +420,7 @@ class ChatClient:
 
     # Terminate the current connection.
     def terminate(self):
+        self.quit_room()
         self.send_command({'action': 'exit', 'room_name': self.current_room})
         if self.error_state:
             exit()

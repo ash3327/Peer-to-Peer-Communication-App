@@ -14,11 +14,30 @@ To install this package, perform the following:
 
 1) Execute ```pip3 install -r requirements.txt``` in command prompt.
 
+> [!CAUTION]
+>
+> 2) To allow the usage of the audio-to-text function, you need to manually install the ffmpeg package. (Note that we only allow English transcription for now)
+>
+>    If you're using conda, then do ```conda install ffmpeg``` (advised).
+>
+>       <details>
+>       <summary>More:</summary>
+>
+>       If your OS is linux, then do ```sudo apt install ffmpeg```.
+>
+>    If your OS is windows, you can download FFMPEG from the official download page: https://ffmpeg.org/download.html#build-windows. (Personally, we used the version ffmpeg-master-latest-win64-gpl.zip provided in https://github.com/BtbN/FFmpeg-Builds/releases)
+>
+>    If your OS is MacOS, you can also download it from the official download page: https://ffmpeg.org/download.html#build-mac.
+>
+>    Note that if you downloaded the executable from the website, you'll have to manually move it (```ffmpeg.exe``` in the unzipped ```bin``` subfolder) to your script's root directory (in the SAME layer as other .py files) (or add it to PATH).
+>   </details>
+
 Note:
 
 1) The application currently only work with computers _in the same local area network_ due to port forwarding. 
 
 > [!CAUTION]
+>
 > 2) Please TURN OFF Windows Defender Firewall AND Windows Firewall (or any firewalls) in the private network before using.
 
 ## Server-Side
