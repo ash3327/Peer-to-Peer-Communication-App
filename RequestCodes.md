@@ -16,6 +16,7 @@ request_user_name | request for changing a user name | user_name<br>room
 voice | stream audio | audio_data, room_name
 record_start | start recording | room_name
 record_end | end recording | room_name
+request_sample_rate | request for the sample rate used
 exit | inform the server to terminate the connection thread
 
 ## Server -> Client
@@ -34,6 +35,7 @@ response_user_name | response for changing a user name | status<br>user_name
 update_room_users | update the list of users in that room | room<br>users
 record_start | start recording notification | room_name
 record_end | end recording notification | room_name
+response_sample_rate | response for the sample rate used | sample_rate
 terminate | notify the client that the server is going offline
 
 

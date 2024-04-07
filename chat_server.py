@@ -31,6 +31,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Compress or decompress files using LZW algorithm')
     parser.add_argument('-p', '--port', type=int, metavar="{1024..49151}", default=PORT, help='The port number in the range 1024-49151.')
     parser.add_argument('-l', '--log', default=argparse.SUPPRESS, action='store_true', help='Whether all communications are logged.')
+    parser.add_argument('-r', '--rate', type=int, default=RATE, help='The audio sample rate, normally 22050 or 44100.')
     return parser.parse_args(), parser.print_help
 
 # Define the ChatServer class to manage chat rooms and client connections
@@ -69,6 +70,7 @@ class ChatServer:
         self.requests = set()
 
         print('Initializing Chat Server at IP [{}] and port [{}]'.format(*self.get_ip()))
+        print('Accepted Audio Sample Rate:', RATE)
         
     # Get the IP address of the server
     def get_ip(self):
@@ -85,13 +87,17 @@ class ChatServer:
                 # Receive and decode a message, then parse it as JSON
                 self.buffers[client_socket].read(socket=client_socket, handler=self.handle_listener)
             # On socket error, close the client's connection
-            except socket.error:
+            except socket.error as e1:
                 try:
-                    self.requests.remove(client_socket)
                     print('Error. Ended request from: %s port %s' % client_socket.getpeername())
+                    self.remove_client(client_socket)
+                    self.requests.remove(client_socket)
                     client_socket.close()
+                    print('Error 94:',e1)
                     return
-                except Exception:
+                except Exception as e:
+                    # raise e
+                    print('Error 98:',e)
                     return
                 
     # Handler
@@ -100,6 +106,7 @@ class ChatServer:
             command = message#json.loads(message)
         except Exception as e:
             self.log(message+'\n'+e, mode='E/error', socket=client_socket)
+            raise e
             return
         self.log(command, mode=f"I/{command['action']}", socket=client_socket)
         # Execute the appropriate action based on the command received
@@ -128,11 +135,17 @@ class ChatServer:
         elif command['action'] == 'record_end':
             if command['room_name'] in self.recordings:
                 self.stop_recording(command['room_name'])
+
+        elif command['action'] == 'request_sample_rate':
+            self.send_data(client_socket, label='response_sample_rate', contents={'sample_rate':RATE})
     
     # remove client from room if client exits
-    def remove_client(self, client_socket, room_name):
+    def remove_client(self, client_socket, room_name=None):
         if room_name:
-            self.chat_rooms[room_name].remove(client_socket)
+            self.quit_room(room_name, client_socket)
+        else:
+            for room in self.chat_rooms:
+                self.quit_room(room, client_socket)
         self.user_names.pop(client_socket, None)
 
     def append_recording(self, last_chunk_data, room_name):
@@ -154,7 +167,7 @@ class ChatServer:
             try:
                 last_chunk_data = self.chat_rooms_audio_overlay[room_name].pop(last_chunk)
             except KeyError as e:
-                return
+                raise e
             if room_name in self.recordings:
                 self.append_recording(last_chunk_data, room_name)
 
@@ -215,8 +228,11 @@ class ChatServer:
 
     # List all chat rooms to the requesting client
     def list_rooms(self, client_socket):
-        cr_info = {room: client_socket in self.chat_rooms[room] for room in self.chat_rooms}
-        self.send_data(client_socket, label='list_rooms', contents={'rooms': cr_info})
+        try:
+            cr_info = {room: client_socket in self.chat_rooms[room] for room in self.chat_rooms}
+            self.send_data(client_socket, label='list_rooms', contents={'rooms': cr_info})
+        except Exception:
+            pass
     
     # Add a client to an existing chat room
     def join_room(self, room_name, client_socket, old_room):
@@ -240,10 +256,13 @@ class ChatServer:
             return
         user_names = [self.user_names[user] for user in self.chat_rooms[room_name]]
         for client_socket in self.chat_rooms[room_name]:
-            self.send_data(client_socket, label='update_room_users', contents={
-                    'room':room_name,
-                    'users':user_names
-                })
+            try:
+                self.send_data(client_socket, label='update_room_users', contents={
+                        'room':room_name,
+                        'users':user_names
+                    })
+            except Exception:
+                pass
             
     # Assign a user name to client
     def assign_user_name(self, user_name, client_socket, room_name):
@@ -262,7 +281,7 @@ class ChatServer:
             
     # Remove the client from the chat room
     def quit_room(self, room_name, client_socket):
-        if room_name:
+        if room_name and client_socket in self.chat_rooms[room_name]:
             self.chat_rooms[room_name].remove(client_socket)
             self.list_rooms(client_socket)
             self.update_room_users(room_name)
@@ -331,6 +350,7 @@ class ChatServer:
             del self.recordings[room_name]
         except Exception as e:
             self.log(e, mode='E/error')
+            raise e
 
 
 def resolve_public_ip(): 
@@ -351,4 +371,6 @@ if __name__ == '__main__':
     #HOST = '127.0.0.1'  # Loopback address for localhost
     HOST = socket.gethostbyname(socket.gethostname())
     PORT = args.port
+    RATE = args.rate
+    SILENT_DURATION_MS = 1000 * CHUNK / RATE
     ChatServer(HOST, PORT, show_log='log' in args).start()

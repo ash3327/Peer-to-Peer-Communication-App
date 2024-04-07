@@ -23,7 +23,7 @@ SERVER_HOST = '10.13.252.5'#'127.0.0.1'#'server_ip'  # Replace with the server's
 SERVER_PORT = 12345
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
-RATE = 22050
+RATE = 11025
 CHUNK = 1024
 
 '''
@@ -69,6 +69,7 @@ class ChatClient:
         threading.Thread(target=self.listen, daemon=True).start()
         self.list_rooms()
         self.request_user_name()
+        self.request_sample_rate()
         self.root.mainloop()
 
     def gui_setup(self):
@@ -135,7 +136,7 @@ class ChatClient:
                 master=self.submenu_frame, 
                 button_style=button_style, 
                 join_room_command=self.join_room,
-                height=self.submenu_frame.winfo_height()*.7,
+                height=self.submenu_frame.winfo_height()*.65,
                 fg_color=resources.get_color('side_bar','fill'),
                 border_width=0, corner_radius=0
             )
@@ -143,11 +144,13 @@ class ChatClient:
 
         # --------- INFO AND SETTINGS ---------
         # Chat server details
-        label = tk.Label(
+        self.info_label = tk.Label(
             self.submenu_frame, 
-            text=f'Server: \t{self.socket.getpeername()[0]}\nPort: \t{self.socket.getpeername()[1]}', 
+            text=f'Server: \t{self.socket.getpeername()[0]}\n'+\
+                 f'Port: \t{self.socket.getpeername()[1]}'+\
+                 f'Sample Rate: \t{RATE}', 
             justify='left', bg=resources.get_color('side_bar','fill'))
-        label.pack(side='bottom', anchor='w', padx=5, pady=2)
+        self.info_label.pack(side='bottom', anchor='w', padx=5, pady=2)
 
         # Settings panel
         self.settings_panel = tk.Frame(self.submenu_frame, bg=resources.get_color('window'))
@@ -166,7 +169,7 @@ class ChatClient:
             text=f'User: {self.user_name}',
             command=ask_for_user_name,
             **button_style)
-        self.user_name_label.pack()
+        self.user_name_label.pack(side='bottom')
 
         # ---------------------------------------
         #               MAIN FRAME
@@ -258,6 +261,9 @@ class ChatClient:
 
     def request_user_name(self, user_name=None):
         self.send_command({'action': 'request_user_name', 'user_name': user_name, 'room': self.current_room})
+
+    def request_sample_rate(self):
+        self.send_command({'action': 'request_sample_rate'})
 
     def send_command(self, command):
         try:
@@ -353,6 +359,20 @@ class ChatClient:
         # self.notify_user(f'Room {room} now has members: {user_list}')
         self.rooms_listbox.show_user_list(room, user_list)
 
+    def set_sample_rate(self, sample_rate):
+        global RATE
+        self.mute_button.set(is_on=False)
+        RATE = sample_rate
+
+        self.info_label.configure(
+            text=f'Server: \t{self.socket.getpeername()[0]}\n'+\
+                 f'Port: \t{self.socket.getpeername()[1]}\n'+\
+                 f'Rate: \t{RATE}'
+        )
+        if self.audio_stream:
+            self.audio_stream.close()
+        self.audio_stream = self.paudio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, output=True, frames_per_buffer=CHUNK)
+
     # Handler of logging
     def log(self, content, mode='D'):
         if self.show_log:
@@ -399,10 +419,13 @@ class ChatClient:
         elif label == 'record_end':
             self.record_button.set(is_on=False, exec=False)
 
-        elif label == 'terminate':
-            self.notify_user("Server Terminated.", label='neutral')
         elif label == 'voice': # receive voice of other people
             threading.Thread(target=self.play_audio_thread, args=(response['audio_data'],), daemon=True).start()
+        elif label == 'response_sample_rate':
+            self.set_sample_rate(response['sample_rate'])
+
+        elif label == 'terminate':
+            self.notify_user("Server Terminated.", label='neutral')
 
     # Listening for data packets
     def listen(self):
@@ -420,6 +443,7 @@ class ChatClient:
 
     # Terminate the current connection.
     def terminate(self):
+        self.quit_room()
         self.send_command({'action': 'exit', 'room_name': self.current_room})
         if self.error_state:
             exit()
