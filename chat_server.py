@@ -140,7 +140,7 @@ class ChatServer:
             self.quit_room(room_name, client_socket)
         else:
             for room in self.chat_rooms:
-                self.quit_room(room_name, client_socket)
+                self.quit_room(room, client_socket)
         self.user_names.pop(client_socket, None)
 
     def append_recording(self, last_chunk_data, room_name):
