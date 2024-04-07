@@ -57,6 +57,8 @@ Notes:
 
 2) You can terminate the server end program and all its associated connections by pressing ```Ctrl+C``` in the command prompt.
 
+3) Sampling Frequency can be set with `-r <frequency>` (Default = 11025)
+
 ## Client-Side
 To start the client-side software, perform the following: 
 
