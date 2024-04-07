@@ -87,15 +87,15 @@ class ChatServer:
             # On socket error, close the client's connection
             except socket.error as e1:
                 try:
+                    print('Error. Ended request from: %s port %s' % client_socket.getpeername())
                     self.remove_client(client_socket)
                     self.requests.remove(client_socket)
-                    print('Error. Ended request from: %s port %s' % client_socket.getpeername())
                     client_socket.close()
-                    print('Error 93:',e1)
+                    print('Error 94:',e1)
                     return
                 except Exception as e:
                     # raise e
-                    print('Error 97:',e)
+                    print('Error 98:',e)
                     return
                 
     # Handler
@@ -223,8 +223,11 @@ class ChatServer:
 
     # List all chat rooms to the requesting client
     def list_rooms(self, client_socket):
-        cr_info = {room: client_socket in self.chat_rooms[room] for room in self.chat_rooms}
-        self.send_data(client_socket, label='list_rooms', contents={'rooms': cr_info})
+        try:
+            cr_info = {room: client_socket in self.chat_rooms[room] for room in self.chat_rooms}
+            self.send_data(client_socket, label='list_rooms', contents={'rooms': cr_info})
+        except Exception:
+            pass
     
     # Add a client to an existing chat room
     def join_room(self, room_name, client_socket, old_room):
@@ -248,10 +251,13 @@ class ChatServer:
             return
         user_names = [self.user_names[user] for user in self.chat_rooms[room_name]]
         for client_socket in self.chat_rooms[room_name]:
-            self.send_data(client_socket, label='update_room_users', contents={
-                    'room':room_name,
-                    'users':user_names
-                })
+            try:
+                self.send_data(client_socket, label='update_room_users', contents={
+                        'room':room_name,
+                        'users':user_names
+                    })
+            except Exception:
+                pass
             
     # Assign a user name to client
     def assign_user_name(self, user_name, client_socket, room_name):
