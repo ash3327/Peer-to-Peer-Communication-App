@@ -227,8 +227,8 @@ class ChatClient:
         # Share screen Button
         self.screen_share_button = ToggleButton(
                 self.recording_panel, 
-                on_image=resources.get_icon('record','share_screen',image_size=image_size),
-                off_image=resources.get_icon('record','stop_share_screen',image_size=image_size),
+                on_image=resources.get_icon('record','stop_share_screen',image_size=image_size),
+                off_image=resources.get_icon('record','share_screen',image_size=image_size),
                 on_command=self.share_screen,
                 off_command=self.stop_share_screen,
                 **button_configs
@@ -282,7 +282,7 @@ class ChatClient:
         if selected_room is None:
             selected_room = self.rooms_listbox.get(tk.ACTIVE)
         if selected_room:
-            self.record_button.set(is_on=False, exec=False)
+            self.handle_join_quit_room()
             self.send_command({'action': 'join', 'room': selected_room, 'old_room': self.current_room})
             
 
@@ -444,16 +444,17 @@ class ChatClient:
 
     def quit_room(self):
         # self.is_streaming = False
-        self.is_screen_sharing = False
-        self.screen_share_button.set(is_on=False)
-        self.send_command({'action': 'screen_unshare', 'room': self.current_room})
+        self.handle_join_quit_room()
         self.quit_button.toggle()
-        self.mute_button.set(is_on=False)
-        self.record_button.set(is_on=False, exec=False)
         self.rooms_listbox.close_user_list()
         self.send_command({'action': 'quit_room', 'room': self.current_room})
         self.current_room = None
         self.notify_user('Room quitted.', label='success')
+
+    def handle_join_quit_room(self):
+        self.screen_share_button.set(is_on=False)
+        self.mute_button.set(is_on=False)
+        self.record_button.set(is_on=False, exec=False)
 
     def update_user_name(self, user_name):
         self.user_name = user_name
