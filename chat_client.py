@@ -4,6 +4,9 @@ import socket
 import threading
 import tkinter as tk
 import pyaudio
+import pyautogui
+from PIL import Image, ImageTk
+import time
 import json
 import customtkinter as ctk
 import warnings
@@ -25,6 +28,7 @@ FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 11025
 CHUNK = 1024
+FRAME_PER_SECOND = 10
 
 '''
     Parse command line arguments
@@ -59,6 +63,13 @@ class ChatClient:
         self.audio_stream = self.paudio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, output=True, frames_per_buffer=CHUNK)
         self.audio_stream_thread = None
         self.is_streaming = False
+
+        # Screen share
+        self.is_screen_sharing = False
+        threading.Thread(target=self.watch_stream, daemon=True).start()
+        self.stream_resolution = (854, 480)
+        self.screen_photo = None
+        self.buffer_image = None
 
         # Start the Window
         self.root = ctk.CTk()
@@ -177,6 +188,10 @@ class ChatClient:
         self.main_frame = tk.Frame(self.root, bg=resources.get_color('window'))
         self.main_frame.place(relx=.25, rely=0, relwidth=.75, relheight=1)
 
+        # Screen display canvas
+        self.screen_canvas = tk.Canvas(self.main_frame, bg=resources.get_color('window'))
+        self.screen_canvas.pack(fill='both', expand=True, padx=0, pady=0)
+
         # ----------- RECORDING PANEL -----------
         self.recording_panel = tk.Frame(self.main_frame, bg=resources.get_color('record_bar','fill'))
         self.recording_panel.pack(side='bottom', pady=10)
@@ -207,6 +222,17 @@ class ChatClient:
                 **button_configs
             )
         self.record_button.pack(side='left', padx=5)
+
+        # Share screen Button
+        self.screen_share_button = ToggleButton(
+                self.recording_panel, 
+                on_image=resources.get_icon('record','stop_share_screen',image_size=image_size),
+                off_image=resources.get_icon('record','share_screen',image_size=image_size),
+                on_command=self.share_screen,
+                off_command=self.stop_share_screen,
+                **button_configs
+            )
+        self.screen_share_button.pack(side='left', padx=5)
 
         # Mute/Unmute Button
         self.mute_button = ToggleButton(
@@ -294,13 +320,11 @@ class ChatClient:
                     # Read audio data from the microphone
                     audio_data = self.audio_stream.read(CHUNK)
                     audio_data = base64.b64encode(audio_data).decode('utf-8')
-                    # print(len(audio_data))
 
                     # Send the audio data to the server
                     command = {'action': 'voice', 
                             'audio_data': audio_data,
                             'room_name': self.current_room,}
-                    # command = {'action':'dummy'}
                     self.send_command(command)
 
                 except Exception as e:
@@ -312,7 +336,6 @@ class ChatClient:
         audio_data = base64.b64decode(audio_data)
         # print(audio_data[:20])
         self.audio_stream.write(audio_data)
-        # self.play_audio(audio_data)
 
     def start_recording(self):
         if self.current_room:
@@ -341,8 +364,88 @@ class ChatClient:
             self.mute_button.set(is_on=False)
             self.notify_user('You cannot unmute without joining a room.', label='fail')
 
+    def share_screen_thread(self):
+        while self.current_room and self.is_screen_sharing:
+            # Capture the screen
+            screenshot = pyautogui.screenshot()
+            # Resize the screenshot to 480p (854x480)
+            screenshot = screenshot.resize(self.stream_resolution, Image.ANTIALIAS)
+            # Convert the screenshot image to bytes
+            screen_bytes = screenshot.tobytes()
+            # Encode the data to base64
+            screen_bytes = base64.b64encode(screen_bytes).decode('utf-8')
+
+            self.send_command({'action': 'update_screen', 'room_name': self.current_room, 'screen_data': screen_bytes})
+
+            time.sleep(1/FRAME_PER_SECOND)
+
+    def share_screen(self):
+        if self.current_room:
+            self.send_command({'action': 'screen_share', 'room_name': self.current_room})
+        else:
+            self.screen_share_button.set(is_on=False)
+            self.notify_user("You cannot share screen without joining a room.", label='fail')
+
+    def share_screen_response(self, status):
+        if status == 'ok':
+            self.notify_user('Now Sharing Screen', label='success')
+            self.is_screen_sharing = True
+
+            threading.Thread(target=self.share_screen_thread, daemon=True).start()
+        else: # someone else is sharing
+            self.notify_user('Another user is sharing the screen', label='fail')
+            self.screen_share_button.set(is_on=False)
+
+    def stop_share_screen(self):
+        if self.is_screen_sharing:
+            self.send_command({'action': 'screen_unshare', 'room_name': self.current_room})
+            self.notify_user('Stopped Sharing Screen')
+            self.is_screen_sharing = False
+
+    def watch_stream(self):
+        while True:
+            if self.current_room:
+                self.send_command({'action':'request_screen_data', 'room_name': self.current_room})
+            time.sleep(1/FRAME_PER_SECOND)
+
+    def update_canvas(self, screen_data):
+        try:
+            # Decode base64-encoded screen data
+            screen_bytes = base64.b64decode(screen_data)
+
+            # Convert bytes to image
+            screen_image = Image.frombytes('RGB', self.stream_resolution, screen_bytes)
+
+            # Convert image to PhotoImage for tkinter canvas
+            self.screen_photo = ImageTk.PhotoImage(screen_image)
+
+            # If buffer image is not created or its size differs from the screen photo, recreate buffer
+            if self.buffer_image is None or self.buffer_image.size != (self.screen_photo.width(), self.screen_photo.height()):
+                self.buffer_image = Image.new("RGB", (self.screen_photo.width(), self.screen_photo.height()))
+            
+            # Draw the screen photo onto the buffer image
+            self.buffer_image.paste(screen_image, (0, 0))
+
+            # Clear canvas before updating
+            self.screen_canvas.delete("all")
+
+            # Draw buffer image onto the canvas
+            self.screen_canvas.create_image(0, 0, anchor='nw', image=self.screen_photo)
+
+            # Keep a reference to the image to prevent it from being garbage collected
+            self.screen_canvas.image = self.screen_photo
+        except Exception as e:
+            print('Error updating canvas:', e)
+
+    def clear_canvas(self):
+        self.screen_canvas.delete("all")
+        print('cleared canvas')
+
     def quit_room(self):
         # self.is_streaming = False
+        self.is_screen_sharing = False
+        self.screen_share_button.set(is_on=False)
+        self.send_command({'action': 'screen_unshare', 'room': self.current_room})
         self.quit_button.toggle()
         self.mute_button.set(is_on=False)
         self.record_button.set(is_on=False, exec=False)
@@ -426,6 +529,12 @@ class ChatClient:
 
         elif label == 'terminate':
             self.notify_user("Server Terminated.", label='neutral')
+        elif label == 'response_screen_data':
+            self.update_canvas(response['screen_data'])
+        elif label == 'clear_canvas':
+            self.clear_canvas()
+        elif label == 'screen_share_response':
+            self.share_screen_response(response['status'])
 
     # Listening for data packets
     def listen(self):

@@ -12,5 +12,7 @@ requests
 # os
 # shutil
 pydub
+pyautogui
+PIL
 
 customtkinter

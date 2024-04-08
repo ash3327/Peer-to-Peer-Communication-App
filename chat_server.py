@@ -66,6 +66,10 @@ class ChatServer:
         }
         '''
 
+        # Dictionary to keep track of screen share
+        self.is_room_share_screen = dict() # Format: {room_name: True/False}
+        self.room_screens = dict() # Format: {room_name: screen_bytes}
+
         # List to keep track of active requests
         self.requests = set()
 
@@ -138,7 +142,25 @@ class ChatServer:
 
         elif command['action'] == 'request_sample_rate':
             self.send_data(client_socket, label='response_sample_rate', contents={'sample_rate':RATE})
-    
+        elif command['action'] == 'screen_share':
+            if (command['room_name'] not in self.is_room_share_screen) or (not self.is_room_share_screen[command['room_name']]):
+                self.is_room_share_screen[command['room_name']] = True
+                self.send_data(client_socket, label='screen_share_response', contents={'status': 'ok'})
+            else:
+                self.send_data(client_socket, label='screen_share_response', contents={'status': 'someone else is sharing'})
+        elif command['action'] == 'screen_unshare':
+            self.is_room_share_screen[command['room_name']] = False
+            self.room_screens.pop(command['room_name'])
+        elif command['action'] == 'update_screen':
+            self.room_screens[command['room_name']] = command['screen_data']
+        elif command['action'] == 'request_screen_data':
+            if (command['room_name'] in self.is_room_share_screen) and (self.is_room_share_screen[command['room_name']]):
+                content = {'screen_data': self.room_screens[command['room_name']]}
+                self.send_data(client_socket, label='response_screen_data', contents=content)
+            else:
+                # self.send_data(client_socket, label='clear_canvas')
+                self.send_data(client_socket, label='clear_canvas', contents={'d':'ummy'})
+
     # remove client from room if client exits
     def remove_client(self, client_socket, room_name=None):
         if room_name:
@@ -196,7 +218,6 @@ class ChatServer:
 
     # receive voice from user and send voice to other user
     def voice(self, command, client_socket):
-        # print(f'audio data:{command["audio_data"]}')
         try:
             room_name = command['room_name']
             if not room_name:

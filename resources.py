@@ -20,8 +20,10 @@ _icons = {
         'start_playback': [Image.open("./res/stop_playback.jpg")],
         'mute': [Image.open("./res/mute.png")],
         'unmute': [Image.open("./res/unmute.png")],
-        'quit_room': [Image.open("./res/quit_room.png")]
-    }
+        'quit_room': [Image.open("./res/quit_room.png")],
+        'share_screen': [Image.open("./res/share_screen.png")],
+        'stop_share_screen': [Image.open("./res/stop_share_screen.png")],
+    },
 }
 
 _colors = {
