@@ -69,6 +69,7 @@ class ChatServer:
         # Dictionary to keep track of screen share
         self.is_room_share_screen = dict() # Format: {room_name: True/False}
         self.room_screens = dict() # Format: {room_name: screen_bytes}
+        self.screen_is_watching = dict()
 
         # List to keep track of active requests
         self.requests = set()
@@ -95,7 +96,6 @@ class ChatServer:
                 try:
                     print('Error. Ended request from: %s port %s' % client_socket.getpeername())
                     self.remove_client(client_socket)
-                    self.requests.remove(client_socket)
                     client_socket.close()
                     print('Error 94:',e1)
                     return
@@ -126,7 +126,6 @@ class ChatServer:
             self.quit_room(command['room'], client_socket)
         elif command['action'] == 'exit':
             self.remove_client(client_socket, command['room_name'])
-            self.requests.remove(client_socket)
             print('Ended request from: %s port %s' % client_socket.getpeername())
             client_socket.close()
             return
@@ -148,18 +147,22 @@ class ChatServer:
                 self.send_data(client_socket, label='screen_share_response', contents={'status': 'ok'})
             else:
                 self.send_data(client_socket, label='screen_share_response', contents={'status': 'someone else is sharing'})
+        
         elif command['action'] == 'screen_unshare':
             self.is_room_share_screen[command['room_name']] = False
             self.room_screens.pop(command['room_name'])
+            self.send_screen_data(command['room_name'])
         elif command['action'] == 'update_screen':
             self.room_screens[command['room_name']] = command['screen_data']
-        elif command['action'] == 'request_screen_data':
-            if (command['room_name'] in self.is_room_share_screen) and (self.is_room_share_screen[command['room_name']]):
-                content = {'screen_data': self.room_screens[command['room_name']]}
-                self.send_data(client_socket, label='response_screen_data', contents=content)
-            else:
-                # self.send_data(client_socket, label='clear_canvas')
-                self.send_data(client_socket, label='clear_canvas', contents={'d':'ummy'})
+            self.send_screen_data(command['room_name'])
+
+        elif command['action'] == 'request_update_screen':
+            self.send_data(client_socket, label='response_update_screen', contents={'status': 'ok'})
+
+        elif command['action'] == 'screen_start_watching':
+            self.screen_is_watching[client_socket] = True
+        elif command['action'] == 'screen_stop_watching':
+            self.screen_is_watching[client_socket] = False
 
     # remove client from room if client exits
     def remove_client(self, client_socket, room_name=None):
@@ -169,6 +172,8 @@ class ChatServer:
             for room in self.chat_rooms:
                 self.quit_room(room, client_socket)
         self.user_names.pop(client_socket, None)
+        self.requests.remove(client_socket)
+        self.screen_is_watching.pop(client_socket, None)
 
     def append_recording(self, last_chunk_data, room_name):
         try:
@@ -234,6 +239,19 @@ class ChatServer:
 
         except Exception as e:
             raise e
+        
+    # Send screen data to client
+    def send_screen_data(self, room):
+        is_room_share_screen = (room in self.is_room_share_screen) and (self.is_room_share_screen[room])
+        for client_socket in self.chat_rooms[room]:
+            if not self.screen_is_watching[client_socket]:
+                continue
+            if is_room_share_screen:
+                content = {'screen_data': self.room_screens[room], 'room': room}
+                self.send_data(client_socket, label='response_screen_data', contents=content)
+            else:
+                # self.send_data(client_socket, label='clear_canvas')
+                self.send_data(client_socket, label='clear_canvas', contents={'d':'ummy'})
 
     # Create a new chat room or inform the host if it already exists
     def create_room(self, room_name, host_socket):        
@@ -329,6 +347,7 @@ class ChatServer:
             self.buffers.update({client_socket: Buffer()})
             threading.Thread(target=self.handle_client, args=(client_socket,), daemon=True).start()
             self.requests.add(client_socket)
+            self.screen_is_watching.update({client_socket: False})
 
     # Terminate all connections and shutdown the server.
     def terminate(self, *args):

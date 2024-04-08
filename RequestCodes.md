@@ -17,6 +17,8 @@ voice | stream audio | audio_data, room_name
 record_start | start recording | room_name
 record_end | end recording | room_name
 request_sample_rate | request for the sample rate used
+screen_start_watching | | room
+screen_stop_watching | | room
 exit | inform the server to terminate the connection thread
 
 ## Server -> Client
@@ -36,6 +38,7 @@ update_room_users | update the list of users in that room | room<br>users
 record_start | start recording notification | room_name
 record_end | end recording notification | room_name
 response_sample_rate | response for the sample rate used | sample_rate
+response_screen_data | | screen_data<br>room
 terminate | notify the client that the server is going offline
 
 
