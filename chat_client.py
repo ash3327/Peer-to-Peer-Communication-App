@@ -60,7 +60,8 @@ class ChatClient:
         
         # Audio setup
         self.paudio = pyaudio.PyAudio()
-        self.audio_stream = self.paudio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, output=True, frames_per_buffer=CHUNK)
+        self.has_microphone = True
+        self.reopen_audio_stream()
         self.audio_stream_thread = None
         self.is_streaming = False
         self.is_watching_stream = True#False
@@ -357,7 +358,12 @@ class ChatClient:
             self.is_streaming = False
 
     def unmute(self):
-        if self.current_room:
+        if not self.has_microphone:
+            self.reopen_audio_stream()
+        if not self.has_microphone:
+            self.mute_button.set(is_on=False)
+            self.notify_user('You don\'t have a microphone.', label='fail')
+        elif self.current_room:
             self.notify_user('Unmuted')
             self.is_streaming = True
             self.start_audio_streaming(self.current_room)
@@ -474,9 +480,17 @@ class ChatClient:
                  f'Port: \t{self.socket.getpeername()[1]}\n'+\
                  f'Rate: \t{RATE}'
         )
-        if self.audio_stream:
+        self.reopen_audio_stream()
+
+    def reopen_audio_stream(self):
+        if hasattr(self, 'audio_stream') and self.audio_stream:
             self.audio_stream.close()
-        self.audio_stream = self.paudio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, output=True, frames_per_buffer=CHUNK)
+        try:
+            self.audio_stream = self.paudio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, output=True, frames_per_buffer=CHUNK)
+            self.has_microphone = True
+        except OSError:
+            self.audio_stream = self.paudio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=False, output=True, frames_per_buffer=CHUNK)
+            self.has_microphone = False
 
     # Handler of logging
     def log(self, content, mode='D'):
