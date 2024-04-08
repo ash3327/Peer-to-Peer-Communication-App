@@ -352,7 +352,7 @@ class ChatServer:
     # Handler of logging
     def log(self, content, mode='D', socket:socket.socket=None):
         if self.show_log:
-            if mode == 'I/voice' or mode == 'O/voice':
+            if len(mode) >= 2 and mode[2:] in resources.LIST_OF_STREAMING_CODES:
                 return
             print(mode.ljust(20), '\t:', *socket.getpeername() if socket else [None], '\t:', content)
 

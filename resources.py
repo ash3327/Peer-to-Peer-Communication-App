@@ -56,6 +56,11 @@ _colors = {
     }
 }
 
+LIST_OF_STREAMING_CODES = [
+    'voice', 'update_screen', 'request_screen_data', 
+    'clear_canvas', 'screen_share_response', 'response_screen_data'
+]
+
 def get_itm(ic, *list):
     for key in list:
         ic = ic[key]

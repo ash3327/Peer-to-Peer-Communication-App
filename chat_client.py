@@ -63,6 +63,7 @@ class ChatClient:
         self.audio_stream = self.paudio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, output=True, frames_per_buffer=CHUNK)
         self.audio_stream_thread = None
         self.is_streaming = False
+        self.is_watching_stream = True#False
 
         # Screen share
         self.is_screen_sharing = False
@@ -226,8 +227,8 @@ class ChatClient:
         # Share screen Button
         self.screen_share_button = ToggleButton(
                 self.recording_panel, 
-                on_image=resources.get_icon('record','stop_share_screen',image_size=image_size),
-                off_image=resources.get_icon('record','share_screen',image_size=image_size),
+                on_image=resources.get_icon('record','share_screen',image_size=image_size),
+                off_image=resources.get_icon('record','stop_share_screen',image_size=image_size),
                 on_command=self.share_screen,
                 off_command=self.stop_share_screen,
                 **button_configs
@@ -369,7 +370,7 @@ class ChatClient:
             # Capture the screen
             screenshot = pyautogui.screenshot()
             # Resize the screenshot to 480p (854x480)
-            screenshot = screenshot.resize(self.stream_resolution, Image.ANTIALIAS)
+            screenshot = screenshot.resize(self.stream_resolution)
             # Convert the screenshot image to bytes
             screen_bytes = screenshot.tobytes()
             # Encode the data to base64
@@ -403,7 +404,7 @@ class ChatClient:
             self.is_screen_sharing = False
 
     def watch_stream(self):
-        while True:
+        while self.is_watching_stream:
             if self.current_room:
                 self.send_command({'action':'request_screen_data', 'room_name': self.current_room})
             time.sleep(1/FRAME_PER_SECOND)
@@ -439,7 +440,7 @@ class ChatClient:
 
     def clear_canvas(self):
         self.screen_canvas.delete("all")
-        print('cleared canvas')
+        # print('cleared canvas')
 
     def quit_room(self):
         # self.is_streaming = False
@@ -479,7 +480,7 @@ class ChatClient:
     # Handler of logging
     def log(self, content, mode='D'):
         if self.show_log:
-            if mode == 'I/voice' or mode == 'O/voice':
+            if len(mode) >= 2 and mode[2:] in resources.LIST_OF_STREAMING_CODES:
                 return
             print(mode.ljust(20), '\t:', content)
         elif mode.startswith('D') or mode.startswith('E'):
