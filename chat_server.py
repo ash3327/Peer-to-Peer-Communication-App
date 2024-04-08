@@ -149,9 +149,7 @@ class ChatServer:
                 self.send_data(client_socket, label='screen_share_response', contents={'status': 'someone else is sharing'})
         
         elif command['action'] == 'screen_unshare':
-            self.is_room_share_screen[command['room_name']] = False
-            self.room_screens.pop(command['room_name'])
-            self.send_screen_data(command['room_name'])
+            self.screen_unshare(command['room_name'])
         elif command['action'] == 'update_screen':
             self.room_screens[command['room_name']] = command['screen_data']
             self.send_screen_data(command['room_name'])
@@ -253,6 +251,12 @@ class ChatServer:
                 # self.send_data(client_socket, label='clear_canvas')
                 self.send_data(client_socket, label='clear_canvas', contents={'d':'ummy'})
 
+    # Unshare
+    def screen_unshare(self, room):
+        self.is_room_share_screen[room] = False
+        self.room_screens.pop(room)
+        self.send_screen_data(room)
+
     # Create a new chat room or inform the host if it already exists
     def create_room(self, room_name, host_socket):        
         if room_name not in self.chat_rooms:
@@ -324,13 +328,18 @@ class ChatServer:
             self.chat_rooms[room_name].remove(client_socket)
             self.list_rooms(client_socket)
             self.update_room_users(room_name)
+            self.screen_unshare(room_name)
 
     # Send data and encode data sent.
     def send_data(self, client_socket, label:str, contents:dict, mode:str='utf-8'):
-        assert mode=='utf-8', 'please write your own handler or modify code'
-        self.log(contents, mode=f'O/{label}', socket=client_socket)
-        contents.update({'label': label})
-        self.buffers[client_socket].send(client_socket, contents)    
+        try:
+            assert mode=='utf-8', 'please write your own handler or modify code'
+            self.log(contents, mode=f'O/{label}', socket=client_socket)
+            contents.update({'label': label})
+            self.buffers[client_socket].send(client_socket, contents)  
+        except ConnectionError as e:
+            self.remove_client(client_socket)
+            print('Connecton Error:',e)  
 
     # Start the server, accept connections, and spawn threads to handle each client
     def start(self):

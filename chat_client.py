@@ -306,7 +306,7 @@ class ChatClient:
             if command['action'] != 'voice':
                 self.log(command, mode=f"O/{command['action']}")
             self.buffer.send(self.socket, command)
-        except (ConnectionResetError, ConnectionAbortedError):
+        except ConnectionError:
             self.handle_lost_connection()
             return
         if command['action'] == 'exit':
@@ -592,7 +592,10 @@ class ChatClient:
 
     # Terminate the current connection.
     def terminate(self):
-        self.quit_room()
+        try:
+            self.quit_room()
+        except Exception:
+            pass
         self.send_command({'action': 'exit', 'room_name': self.current_room})
         if self.error_state:
             exit()

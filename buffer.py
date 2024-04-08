@@ -25,7 +25,4 @@ class Buffer:
             pass
     
     def send(self, socket, command):
-        try:
-            socket.send((self.sep+json.dumps(command)+self.sep).encode('utf-8'))
-        except Exception as e:
-            print('Error 31:',e)
+        socket.send((self.sep+json.dumps(command)+self.sep).encode('utf-8'))
