@@ -13,5 +13,10 @@ requests
 # shutil
 pydub
 pyautogui
+pytube
+moviepy
+spleeter
+torch
+openunmix
 
 customtkinter
