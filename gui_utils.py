@@ -125,13 +125,14 @@ class ToggleButton(ctk.CTkButton):
     def __init__(
         self, master, on_image=None, off_image=None, on_command=None, off_command=None,
         on_color=None, off_color=None, hover_on_color=None, hover_off_color=None, 
-        is_on=False, **kwargs
+        is_on=False, pos=dict(relx=.5, rely=.5, anchor='s'), **kwargs
     ):
         self.on_config = dict(image=on_image, fg_color=on_color, hover_color=hover_on_color)
         self.off_config = dict(image=off_image, fg_color=off_color, hover_color=hover_off_color)
         self.on_command = on_command
         self.off_command = off_command
         self.is_on = is_on
+        self.pos = pos
         super(ToggleButton, self).__init__(master, **self.get_config(), **kwargs, command=self.toggle)
 
     def toggle(self):
@@ -153,6 +154,20 @@ class ToggleButton(ctk.CTkButton):
 
     def get_config(self):
         return self.on_config if self.is_on else self.off_config
+    
+    def show(self):
+        self.set(is_on=False, exec=False)
+        self.place(**self.pos)
+    
+    def hide(self):
+        resources.exec(self.place_forget)
+
+    def trigger(self, on=True):
+        self.set(is_on=on)
+        if on:
+            self.hide()
+        else:
+            self.show()
     
 class InputDialog(ctk.CTkInputDialog):
     def __init__(self, root, text, title):

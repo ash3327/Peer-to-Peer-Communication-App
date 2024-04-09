@@ -63,7 +63,8 @@ _colors = {
 
 LIST_OF_STREAMING_CODES = [
     'voice', 'update_screen', 'request_screen_data', 
-    'clear_canvas', 'screen_share_response', 'response_screen_data'
+    'screen_share_response', 'response_screen_data',
+    'request_update_screen', 'response_update_screen'
 ]
 
 _mag_ratio = 1.0
@@ -113,3 +114,9 @@ def get_color(*list):
             }
     '''
     return get_itm(_colors, *list)
+
+def exec(fun, *args, **kwargs):
+    try:
+        fun(*args, **kwargs)
+    except Exception:
+        pass
