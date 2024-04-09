@@ -509,7 +509,8 @@ class ChatClient:
 
     def clear_canvas(self, update_buttons:bool=True):
         self.stop_watching_stream_button.hide()
-        if update_buttons:
+        print('Current Room:', self.current_room)
+        if update_buttons or self.current_room is None:
             self.watch_stream_button.hide()
         else:
             self.watch_stream_button.show()
