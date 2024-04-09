@@ -328,7 +328,7 @@ class ChatServer:
             self.chat_rooms[room_name].remove(client_socket)
             self.list_rooms(client_socket)
             self.update_room_users(room_name)
-            self.screen_unshare(room_name)
+            # self.screen_unshare(room_name)
 
     # Send data and encode data sent.
     def send_data(self, client_socket, label:str, contents:dict, mode:str='utf-8'):
