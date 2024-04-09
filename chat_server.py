@@ -157,8 +157,9 @@ class ChatServer:
             self.screen_is_watching[client_socket] = True
         elif command['action'] == 'screen_stop_watching':
             if self.screen_is_watching[client_socket]:
+                is_room_share_screen = self.check_room_is_sharing_screen(command['room'])
                 self.screen_is_watching[client_socket] = False
-                self.send_data(client_socket, label='clear_canvas', contents={'d':'ummy'})
+                self.send_data(client_socket, label='clear_canvas', contents={'room_continue_streaming':is_room_share_screen,'line':162})
 
     # remove client from room if client exits
     def remove_client(self, client_socket, room_name=None):
@@ -251,7 +252,7 @@ class ChatServer:
                 self.send_data(client_socket, label='response_screen_data', contents=content)
             else:
                 # self.send_data(client_socket, label='clear_canvas')
-                self.send_data(client_socket, label='clear_canvas', contents={'d':'ummy'})
+                self.send_data(client_socket, label='clear_canvas', contents={'room_continue_streaming':is_room_share_screen,'line':255})
 
     # Share
     def screen_share(self, room, client_socket):

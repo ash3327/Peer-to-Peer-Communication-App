@@ -507,9 +507,12 @@ class ChatClient:
         except Exception as e:
             print('Error updating canvas:', e)
 
-    def clear_canvas(self):
+    def clear_canvas(self, update_buttons:bool=True):
         self.stop_watching_stream_button.hide()
-        self.watch_stream_button.hide()
+        if update_buttons:
+            self.watch_stream_button.hide()
+        else:
+            self.watch_stream_button.show()
         self.rooms_listbox.set_user_is_sharing(None)
         self.screen_canvas.delete("all")
         # print('cleared canvas')
@@ -517,7 +520,6 @@ class ChatClient:
     def quit_room(self):
         # self.is_streaming = False
         self.handle_join_quit_room()
-        self.watch_stream_button.trigger(on=False)
         self.quit_button.toggle()
         self.rooms_listbox.close_user_list()
         self.send_command({'action': 'quit_room', 'room': self.current_room})
@@ -532,6 +534,7 @@ class ChatClient:
         self.screen_share_button.set(is_on=False)
         self.mute_button.set(is_on=False)
         self.record_button.set(is_on=False, exec=False)
+        self.watch_stream_button.hide()
 
     def update_user_name(self, user_name):
         self.user_name = user_name
@@ -628,7 +631,7 @@ class ChatClient:
             self.watch_stream_button.show()
             self.screen_stop_watching(update_buttons=False)
         elif label == 'clear_canvas':
-            self.clear_canvas()
+            self.clear_canvas(update_buttons=not response['room_continue_streaming'])
         elif label == 'screen_share_response':
             self.share_screen_response(response['status'])
 
