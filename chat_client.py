@@ -439,10 +439,13 @@ class ChatClient:
             self.notify_user('Stopped Sharing Screen')
             self.is_screen_sharing = False
 
-    def update_canvas(self, screen_data, room):
+    def update_canvas(self, screen_data, room, sharer=None):
         if self.current_room != room:
             return
         try:
+            # Update side panel
+            self.rooms_listbox.set_user_is_sharing(sharer)
+
             # Decode base64-encoded screen data
             screen_bytes = base64.b64decode(screen_data)
 
@@ -478,6 +481,7 @@ class ChatClient:
             print('Error updating canvas:', e)
 
     def clear_canvas(self):
+        self.rooms_listbox.set_user_is_sharing(None)
         self.screen_canvas.delete("all")
         # print('cleared canvas')
 
@@ -504,7 +508,7 @@ class ChatClient:
 
     def update_room_users(self, room, user_list):
         # self.notify_user(f'Room {room} now has members: {user_list}')
-        self.rooms_listbox.show_user_list(room, user_list)
+        self.rooms_listbox.show_user_list(room, user_list, user=self.user_name)
 
     def set_sample_rate(self, sample_rate):
         global RATE
@@ -586,7 +590,7 @@ class ChatClient:
             if response['status'] == 'ok':
                 self.send_share_screen()
         elif label == 'response_screen_data':
-            self.update_canvas(response['screen_data'], response['room'])
+            self.update_canvas(response['screen_data'], response['room'], response['sharer'])
         elif label == 'clear_canvas':
             self.clear_canvas()
         elif label == 'screen_share_response':

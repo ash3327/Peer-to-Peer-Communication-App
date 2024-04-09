@@ -10,6 +10,7 @@ _icons = {
         'join_room_icon': [Image.open("./res/join_group_icon.png")],
         'room_icon': [Image.open("./res/group_icon.png")],
         'user': [Image.open("./res/user_icon.png")],
+        'self': [Image.open("./res/self_icon.png")],
         'brand_header': [Image.open("./res/brand_header.png")]
     },
     'record':
@@ -24,6 +25,10 @@ _icons = {
         'share_screen': [Image.open("./res/share_screen.png")],
         'stop_share_screen': [Image.open("./res/stop_share_screen.png")],
     },
+    'status':
+    {
+        'sharing_screen': [Image.open("./res/sharing_screen.png")],
+    }
 }
 
 _colors = {

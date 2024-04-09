@@ -152,7 +152,7 @@ class ChatServer:
             self.screen_unshare(command['room_name'])
         elif command['action'] == 'update_screen':
             self.room_screens[command['room_name']] = command['screen_data']
-            self.send_screen_data(command['room_name'])
+            self.send_screen_data(command['room_name'], sharer=client_socket)
 
         elif command['action'] == 'request_update_screen':
             self.send_data(client_socket, label='response_update_screen', contents={'status': 'ok'})
@@ -239,13 +239,13 @@ class ChatServer:
             raise e
         
     # Send screen data to client
-    def send_screen_data(self, room):
+    def send_screen_data(self, room, sharer=None):
         is_room_share_screen = (room in self.is_room_share_screen) and (self.is_room_share_screen[room])
         for client_socket in self.chat_rooms[room]:
             if not self.screen_is_watching[client_socket]:
                 continue
             if is_room_share_screen:
-                content = {'screen_data': self.room_screens[room], 'room': room}
+                content = {'screen_data': self.room_screens[room], 'room': room, 'sharer': self.user_names[sharer]}
                 self.send_data(client_socket, label='response_screen_data', contents=content)
             else:
                 # self.send_data(client_socket, label='clear_canvas')
@@ -316,11 +316,12 @@ class ChatServer:
         
         if username_is_valid:
             self.user_names.update({client_socket: user_name})
-            self.update_room_users(room_name)
         self.send_data(client_socket, label='response_user_name', contents={
                     'status': 'ok' if username_is_valid else 'conflict',
                     'user_name':user_name
                 })
+        if username_is_valid:
+            self.update_room_users(room_name)
             
     # Remove the client from the chat room
     def quit_room(self, room_name, client_socket):
