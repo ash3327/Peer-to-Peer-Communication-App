@@ -70,6 +70,7 @@ class ChatServer:
         self.is_room_share_screen = dict() # Format: {room_name: True/False}
         self.room_screens = dict() # Format: {room_name: screen_bytes}
         self.screen_is_watching = dict()
+        self.screen_sharer = dict()
 
         # List to keep track of active requests
         self.requests = set()
@@ -258,6 +259,7 @@ class ChatServer:
     def screen_share(self, room, client_socket):
         if (room not in self.is_room_share_screen) or (not self.is_room_share_screen[room]):
             self.is_room_share_screen[room] = True
+            self.screen_sharer[room] = client_socket
             self.send_data(client_socket, label='screen_share_response', contents={'status': 'ok'})
             for other_client in self.chat_rooms[room]:
                 if other_client != client_socket:
@@ -268,6 +270,7 @@ class ChatServer:
     # Unshare
     def screen_unshare(self, room):
         self.is_room_share_screen[room] = False
+        self.screen_sharer[room] = None
         self.room_screens.pop(room)
         self.send_screen_data(room)
 
@@ -349,7 +352,8 @@ class ChatServer:
             self.chat_rooms[room_name].remove(client_socket)
             self.list_rooms(client_socket)
             self.update_room_users(room_name)
-            # self.screen_unshare(room_name)
+            if self.screen_sharer[room_name] == client_socket:
+                self.screen_unshare(room_name)
 
     # Send data and encode data sent.
     def send_data(self, client_socket, label:str, contents:dict=dict(), mode:str='utf-8'):
