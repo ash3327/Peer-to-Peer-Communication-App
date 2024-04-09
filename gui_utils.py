@@ -10,7 +10,11 @@ class RoomsPanel(ctk.CTkScrollableFrame):
         self.widget_list = list()
         self.widget_dict = dict()
         self.frame_dict = dict()
+
         self.sublist = None
+        self.participants = dict()
+        self.user_state_widget_list = dict()
+
         self.button_style = button_style
         self.join_room_command = join_room_command
         self.active = None
@@ -30,7 +34,7 @@ class RoomsPanel(ctk.CTkScrollableFrame):
                 command=lambda: self.call(room_name),
                 bg_color=self.get_color(is_active=False),
                 **self.button_style,
-            )   
+            )
         room_button.pack()
         self.widget_list.insert(pos, [room_name, room_button])
         self.widget_dict.update({room_name: room_button})
@@ -49,24 +53,42 @@ class RoomsPanel(ctk.CTkScrollableFrame):
                 fg_color=self.get_color(is_active=is_member)
             )
 
-    def show_user_list(self, room_name, user_list):
-        if self.sublist:
-            self.sublist.pack_forget()
-            self.sublist.destroy()
+    def show_user_list(self, room_name, user_list, sharing=None, user=None):
+        self.close_user_list()
 
         self.sublist = tk.Frame(self.frame_dict[room_name])
         self.sublist.pack(anchor='w',padx=(40,0))
 
-        for user in user_list:
+        for _user in user_list:
             fr = tk.Frame(self.sublist)
-            tk.Label(fr, image=resources.get_icon('side_bar','user',image_size=16)).pack(side='left')
-            tk.Label(fr, text=user).pack(side='left')
+            icon_desc = 'user' if _user != user else 'self'
+            tk.Label(fr, image=resources.get_icon('side_bar',icon_desc,image_size=16)).pack(side='left')
+            tk.Label(fr, text=_user).pack(side='left')
             fr.pack(side='top',anchor='w',pady=2)
+            self.participants.update({_user: fr})
 
     def close_user_list(self):
         if self.sublist:
+            self.participants.clear()
             self.sublist.pack_forget()
             self.sublist.destroy()
+
+    def set_user_is_sharing(self, sharer=None):
+        if 'screen_sharing' in self.user_state_widget_list:
+            _sharer, lbl = self.user_state_widget_list['screen_sharing']
+            if sharer == _sharer:
+                return
+            if lbl is not None:
+                lbl.pack_forget()
+                lbl.destroy()
+        
+        if sharer is None:
+            self.user_state_widget_list.update(dict(screen_sharing=(None,None)))
+        elif self.sublist and sharer in self.participants:
+            fr = self.participants[sharer]
+            lbl = tk.Label(fr, image=resources.get_icon('status','sharing_screen',image_size=16))
+            lbl.pack(side='left')
+            self.user_state_widget_list.update(dict(screen_sharing=(sharer,lbl)))
 
     def remove(self, room_name):
         for room_info in self.widget_list:

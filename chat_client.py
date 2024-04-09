@@ -17,7 +17,7 @@ import base64
 
 from buffer import Buffer
 
-ctk.deactivate_automatic_dpi_awareness()
+#ctk.deactivate_automatic_dpi_awareness()
 warnings.filterwarnings('ignore')
 
 # Networking configuration 
@@ -60,14 +60,14 @@ class ChatClient:
         
         # Audio setup
         self.paudio = pyaudio.PyAudio()
-        self.audio_stream = self.paudio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, output=True, frames_per_buffer=CHUNK)
+        self.has_microphone = True
+        self.reopen_audio_stream()
         self.audio_stream_thread = None
         self.is_streaming = False
         self.is_watching_stream = True#False
 
         # Screen share
         self.is_screen_sharing = False
-        threading.Thread(target=self.watch_stream, daemon=True).start()
         self.stream_resolution = (854, 480)
         self.screen_photo = None
         self.buffer_image = None
@@ -92,7 +92,12 @@ class ChatClient:
         screen_size = (self.root.winfo_screenwidth(), self.root.winfo_screenheight()*.9)
         self.root.geometry('%dx%d' % window_size)
         self.root.eval('tk::PlaceWindow . center')
-        self.root.geometry('+%d+%d' % (screen_size[0]/2-window_size[0]/2,screen_size[1]/2-window_size[1]/2))
+
+        self.root.update()
+        self.mag_ratio = self.root.winfo_width()/window_size[0]
+        resources.set_ratio(self.mag_ratio)
+
+        self.root.geometry('+%d+%d' % (screen_size[0]/2-self.root.winfo_width()/2,screen_size[1]/2-self.root.winfo_height()/2))
         self.root.configure(bg=resources.get_color('window'))
 
         # ---------------------------------------
@@ -111,7 +116,8 @@ class ChatClient:
         logo = tk.Label(self.brand_frame, 
                         image=resources.get_icon(
                             'side_bar','brand_header',
-                            image_size=logo_size
+                            image_size=logo_size,
+                            rescale=False
                         ))
         logo.pack()
 
@@ -148,7 +154,7 @@ class ChatClient:
                 master=self.submenu_frame, 
                 button_style=button_style, 
                 join_room_command=self.join_room,
-                height=self.submenu_frame.winfo_height()*.65,
+                height=self.submenu_frame.winfo_height()/self.mag_ratio*.6,
                 fg_color=resources.get_color('side_bar','fill'),
                 border_width=0, corner_radius=0
             )
@@ -281,10 +287,19 @@ class ChatClient:
     def join_room(self, selected_room=None):
         if selected_room is None:
             selected_room = self.rooms_listbox.get(tk.ACTIVE)
-        if selected_room:
+        if selected_room is None:
+            return
+        if selected_room != self.current_room:
             self.handle_join_quit_room()
             self.send_command({'action': 'join', 'room': selected_room, 'old_room': self.current_room})
+        else:
+            self.notify_user("Room already joined.", label='neutral')
             
+    def screen_start_watching(self):
+        self.send_command({'action': 'screen_start_watching', 'room': self.current_room})
+
+    def screen_stop_watching(self):
+        self.send_command({'action': 'screen_stop_watching', 'room': self.current_room})
 
     def request_user_name(self, user_name=None):
         self.send_command({'action': 'request_user_name', 'user_name': user_name, 'room': self.current_room})
@@ -297,7 +312,7 @@ class ChatClient:
             if command['action'] != 'voice':
                 self.log(command, mode=f"O/{command['action']}")
             self.buffer.send(self.socket, command)
-        except (ConnectionResetError, ConnectionAbortedError):
+        except ConnectionError:
             self.handle_lost_connection()
             return
         if command['action'] == 'exit':
@@ -333,10 +348,14 @@ class ChatClient:
                     break
 
     def play_audio_thread(self, audio_data):
-        # Play the received audio data
-        audio_data = base64.b64decode(audio_data)
-        # print(audio_data[:20])
-        self.audio_stream.write(audio_data)
+        try:
+            # Play the received audio data
+            audio_data = base64.b64decode(audio_data)
+            # print(audio_data[:20])
+            self.audio_stream.write(audio_data)
+        except OSError as e:
+            print('Error 351:',e)
+            raise e
 
     def start_recording(self):
         if self.current_room:
@@ -357,7 +376,12 @@ class ChatClient:
             self.is_streaming = False
 
     def unmute(self):
-        if self.current_room:
+        if not self.has_microphone:
+            self.reopen_audio_stream()
+        if not self.has_microphone:
+            self.mute_button.set(is_on=False)
+            self.notify_user('You don\'t have a microphone.', label='fail')
+        elif self.current_room:
             self.notify_user('Unmuted')
             self.is_streaming = True
             self.start_audio_streaming(self.current_room)
@@ -366,19 +390,31 @@ class ChatClient:
             self.notify_user('You cannot unmute without joining a room.', label='fail')
 
     def share_screen_thread(self):
+        self.share_screen_got_feedback = True
+        past_time = time.time()
         while self.current_room and self.is_screen_sharing:
-            # Capture the screen
-            screenshot = pyautogui.screenshot()
-            # Resize the screenshot to 480p (854x480)
-            screenshot = screenshot.resize(self.stream_resolution)
-            # Convert the screenshot image to bytes
-            screen_bytes = screenshot.tobytes()
-            # Encode the data to base64
-            screen_bytes = base64.b64encode(screen_bytes).decode('utf-8')
+            curr_time = time.time()
+            if self.share_screen_got_feedback and curr_time-past_time > 1/FRAME_PER_SECOND:
+                self.share_screen_got_feedback = False
+                self.send_command({'action': 'request_update_screen', 'room_name': self.current_room})
+                past_time = curr_time
+            time.sleep(.1/FRAME_PER_SECOND)
+        print('Ended sharing screen 396.')
 
-            self.send_command({'action': 'update_screen', 'room_name': self.current_room, 'screen_data': screen_bytes})
+    def send_share_screen(self):
+        if not (self.current_room and self.is_screen_sharing):
+            return
+        # Capture the screen
+        screenshot = pyautogui.screenshot()
+        # Resize the screenshot to 480p (854x480)
+        screenshot = screenshot.resize(self.stream_resolution)
+        # Convert the screenshot image to bytes
+        screen_bytes = screenshot.tobytes()
+        # Encode the data to base64
+        screen_bytes = base64.b64encode(screen_bytes).decode('utf-8')
 
-            time.sleep(1/FRAME_PER_SECOND)
+        self.send_command({'action': 'update_screen', 'room_name': self.current_room, 'screen_data': screen_bytes})
+        self.share_screen_got_feedback = True
 
     def share_screen(self):
         if self.current_room:
@@ -403,35 +439,41 @@ class ChatClient:
             self.notify_user('Stopped Sharing Screen')
             self.is_screen_sharing = False
 
-    def watch_stream(self):
-        while self.is_watching_stream:
-            if self.current_room:
-                self.send_command({'action':'request_screen_data', 'room_name': self.current_room})
-            time.sleep(1/FRAME_PER_SECOND)
-
-    def update_canvas(self, screen_data):
+    def update_canvas(self, screen_data, room, sharer=None):
+        if self.current_room != room:
+            return
         try:
+            # Update side panel
+            self.rooms_listbox.set_user_is_sharing(sharer)
+
             # Decode base64-encoded screen data
             screen_bytes = base64.b64decode(screen_data)
 
             # Convert bytes to image
             screen_image = Image.frombytes('RGB', self.stream_resolution, screen_bytes)
 
+            img_size = (screen_image.width, screen_image.height)
+            scale = self.screen_canvas.winfo_width() / screen_image.width
+            img_size = tuple(int(itm*scale) for itm in img_size)
+            pad = (self.screen_canvas.winfo_height() - img_size[1])//2
+            screen_image = screen_image.resize(img_size)
+
             # Convert image to PhotoImage for tkinter canvas
             self.screen_photo = ImageTk.PhotoImage(screen_image)
-
-            # If buffer image is not created or its size differs from the screen photo, recreate buffer
-            if self.buffer_image is None or self.buffer_image.size != (self.screen_photo.width(), self.screen_photo.height()):
-                self.buffer_image = Image.new("RGB", (self.screen_photo.width(), self.screen_photo.height()))
             
-            # Draw the screen photo onto the buffer image
-            self.buffer_image.paste(screen_image, (0, 0))
+            # # If buffer image is not created or its size differs from the screen photo, recreate buffer
+            # if self.buffer_image is None or self.buffer_image.size != img_size:
+            #     self.buffer_image = Image.new("RGB", img_size)
+            
+            # # Draw the screen photo onto the buffer image
+            # self.screen_canvas.update()
+            # self.buffer_image.paste(screen_image, (0, 0))
 
             # Clear canvas before updating
             self.screen_canvas.delete("all")
 
             # Draw buffer image onto the canvas
-            self.screen_canvas.create_image(0, 0, anchor='nw', image=self.screen_photo)
+            self.screen_canvas.create_image(0, pad, anchor='nw', image=self.screen_photo)
 
             # Keep a reference to the image to prevent it from being garbage collected
             self.screen_canvas.image = self.screen_photo
@@ -439,6 +481,7 @@ class ChatClient:
             print('Error updating canvas:', e)
 
     def clear_canvas(self):
+        self.rooms_listbox.set_user_is_sharing(None)
         self.screen_canvas.delete("all")
         # print('cleared canvas')
 
@@ -452,6 +495,9 @@ class ChatClient:
         self.notify_user('Room quitted.', label='success')
 
     def handle_join_quit_room(self):
+        self.clear_canvas()
+        self.screen_stop_watching()
+        self.stop_share_screen()
         self.screen_share_button.set(is_on=False)
         self.mute_button.set(is_on=False)
         self.record_button.set(is_on=False, exec=False)
@@ -462,7 +508,7 @@ class ChatClient:
 
     def update_room_users(self, room, user_list):
         # self.notify_user(f'Room {room} now has members: {user_list}')
-        self.rooms_listbox.show_user_list(room, user_list)
+        self.rooms_listbox.show_user_list(room, user_list, user=self.user_name)
 
     def set_sample_rate(self, sample_rate):
         global RATE
@@ -474,9 +520,17 @@ class ChatClient:
                  f'Port: \t{self.socket.getpeername()[1]}\n'+\
                  f'Rate: \t{RATE}'
         )
-        if self.audio_stream:
+        self.reopen_audio_stream()
+
+    def reopen_audio_stream(self):
+        if hasattr(self, 'audio_stream') and self.audio_stream:
             self.audio_stream.close()
-        self.audio_stream = self.paudio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, output=True, frames_per_buffer=CHUNK)
+        try:
+            self.audio_stream = self.paudio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, output=True, frames_per_buffer=CHUNK)
+            self.has_microphone = True
+        except OSError:
+            self.audio_stream = self.paudio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=False, output=True, frames_per_buffer=CHUNK)
+            self.has_microphone = False
 
     # Handler of logging
     def log(self, content, mode='D'):
@@ -503,8 +557,9 @@ class ChatClient:
             if response['status'] == 'ok':
                 self.notify_user(f"Joined room '{response['room']}' successfully.", label='success')
                 self.current_room = response['room']
+                self.clear_canvas()
                 self.list_rooms()
-                # print('start audio_streaming thread')
+                self.screen_start_watching()
                 self.start_audio_streaming(response['room'])
             elif response['status'] == 'room already joined':
                 self.notify_user("Room already joined.", label='neutral')
@@ -531,8 +586,11 @@ class ChatClient:
 
         elif label == 'terminate':
             self.notify_user("Server Terminated.", label='neutral')
+        elif label == 'response_update_screen':
+            if response['status'] == 'ok':
+                self.send_share_screen()
         elif label == 'response_screen_data':
-            self.update_canvas(response['screen_data'])
+            self.update_canvas(response['screen_data'], response['room'], response['sharer'])
         elif label == 'clear_canvas':
             self.clear_canvas()
         elif label == 'screen_share_response':
@@ -543,7 +601,8 @@ class ChatClient:
         while True:
             try:
                 self.buffer.read(socket=self.socket, handler=self.handle_listener)
-            except socket.error:
+            except socket.error as e:
+                print('Error 585:',e)
                 return
             
     # Handler
@@ -554,7 +613,11 @@ class ChatClient:
 
     # Terminate the current connection.
     def terminate(self):
-        self.quit_room()
+        try:
+            self.quit_room()
+        except Exception as e:
+            print('Error 599:',e)
+            pass
         self.send_command({'action': 'exit', 'room_name': self.current_room})
         if self.error_state:
             exit()

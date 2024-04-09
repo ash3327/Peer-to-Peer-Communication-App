@@ -10,6 +10,7 @@ _icons = {
         'join_room_icon': [Image.open("./res/join_group_icon.png")],
         'room_icon': [Image.open("./res/group_icon.png")],
         'user': [Image.open("./res/user_icon.png")],
+        'self': [Image.open("./res/self_icon.png")],
         'brand_header': [Image.open("./res/brand_header.png")]
     },
     'record':
@@ -24,6 +25,10 @@ _icons = {
         'share_screen': [Image.open("./res/share_screen.png")],
         'stop_share_screen': [Image.open("./res/stop_share_screen.png")],
     },
+    'status':
+    {
+        'sharing_screen': [Image.open("./res/sharing_screen.png")],
+    }
 }
 
 _colors = {
@@ -61,12 +66,18 @@ LIST_OF_STREAMING_CODES = [
     'clear_canvas', 'screen_share_response', 'response_screen_data'
 ]
 
+_mag_ratio = 1.0
+
+def set_ratio(ratio:float):
+    global _mag_ratio
+    _mag_ratio = ratio
+
 def get_itm(ic, *list):
     for key in list:
         ic = ic[key]
     return ic
 
-def get_icon(*list_, image_size:int=None):
+def get_icon(*list_, image_size:int=None, rescale:bool=True):
     '''
             Usage: get_icon('side_bar', 'add_icon', image_size=32) 
 
@@ -80,10 +91,12 @@ def get_icon(*list_, image_size:int=None):
     '''
     ic = get_itm(_icons, *list_)
     icc = ic[0]
+    mag_ratio = _mag_ratio if rescale else 1.0
     if isinstance(image_size, int):
+        image_size = int(image_size*mag_ratio)
         icc = icc.resize((image_size, image_size))
     elif isinstance(image_size, (list,tuple)):
-        icc = icc.resize(image_size)
+        icc = icc.resize((int(itm*mag_ratio) for itm in image_size))
     ic.append(ImageTk.PhotoImage(icc))
     return ic[-1]
 
