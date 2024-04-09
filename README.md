@@ -46,6 +46,7 @@ To start the server, perform the following:
 
     - Use the token ```-h``` to get hints on the arguments.
     - Use the token ```-l``` to show logs of all communication between server and client.
+    - Use the token ```-r``` to change the sampling frequency of all audio messages sent to and received from this server.
     - Press ```Ctrl+C``` for the following:
         - check the ip and port of the server, or
         - terminate the server
@@ -57,7 +58,7 @@ Notes:
 
 2) You can terminate the server end program and all its associated connections by pressing ```Ctrl+C``` in the command prompt.
 
-3) Sampling Frequency can be set with `-r <frequency>` (Default = 11025)
+3) Sampling Frequency can be set with `-r <frequency>` (Default = 11025). It is advised to lower your sampling frequency if your computer cannot handle the default sampling frequency. Another viable option is ```-r 5000```.
 
 ## Client-Side
 To start the client-side software, perform the following: 

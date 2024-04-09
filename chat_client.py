@@ -17,7 +17,7 @@ import base64
 
 from buffer import Buffer
 
-ctk.deactivate_automatic_dpi_awareness()
+#ctk.deactivate_automatic_dpi_awareness()
 warnings.filterwarnings('ignore')
 
 # Networking configuration 
@@ -92,7 +92,12 @@ class ChatClient:
         screen_size = (self.root.winfo_screenwidth(), self.root.winfo_screenheight()*.9)
         self.root.geometry('%dx%d' % window_size)
         self.root.eval('tk::PlaceWindow . center')
-        self.root.geometry('+%d+%d' % (screen_size[0]/2-window_size[0]/2,screen_size[1]/2-window_size[1]/2))
+
+        self.root.update()
+        self.mag_ratio = self.root.winfo_width()/window_size[0]
+        resources.set_ratio(self.mag_ratio)
+
+        self.root.geometry('+%d+%d' % (screen_size[0]/2-self.root.winfo_width()/2,screen_size[1]/2-self.root.winfo_height()/2))
         self.root.configure(bg=resources.get_color('window'))
 
         # ---------------------------------------
@@ -111,7 +116,8 @@ class ChatClient:
         logo = tk.Label(self.brand_frame, 
                         image=resources.get_icon(
                             'side_bar','brand_header',
-                            image_size=logo_size
+                            image_size=logo_size,
+                            rescale=False
                         ))
         logo.pack()
 
@@ -148,7 +154,7 @@ class ChatClient:
                 master=self.submenu_frame, 
                 button_style=button_style, 
                 join_room_command=self.join_room,
-                height=self.submenu_frame.winfo_height()*.65,
+                height=self.submenu_frame.winfo_height()/self.mag_ratio*.6,
                 fg_color=resources.get_color('side_bar','fill'),
                 border_width=0, corner_radius=0
             )
@@ -348,6 +354,7 @@ class ChatClient:
             # print(audio_data[:20])
             self.audio_stream.write(audio_data)
         except OSError as e:
+            print('Error 351:',e)
             raise e
 
     def start_recording(self):
@@ -392,6 +399,7 @@ class ChatClient:
                 self.send_command({'action': 'request_update_screen', 'room_name': self.current_room})
                 past_time = curr_time
             time.sleep(.1/FRAME_PER_SECOND)
+        print('Ended sharing screen 396.')
 
     def send_share_screen(self):
         if not (self.current_room and self.is_screen_sharing):
@@ -441,21 +449,28 @@ class ChatClient:
             # Convert bytes to image
             screen_image = Image.frombytes('RGB', self.stream_resolution, screen_bytes)
 
+            img_size = (screen_image.width, screen_image.height)
+            scale = self.screen_canvas.winfo_width() / screen_image.width
+            img_size = tuple(int(itm*scale) for itm in img_size)
+            pad = (self.screen_canvas.winfo_height() - img_size[1])//2
+            screen_image = screen_image.resize(img_size)
+
             # Convert image to PhotoImage for tkinter canvas
             self.screen_photo = ImageTk.PhotoImage(screen_image)
-
-            # If buffer image is not created or its size differs from the screen photo, recreate buffer
-            if self.buffer_image is None or self.buffer_image.size != (self.screen_photo.width(), self.screen_photo.height()):
-                self.buffer_image = Image.new("RGB", (self.screen_photo.width(), self.screen_photo.height()))
             
-            # Draw the screen photo onto the buffer image
-            self.buffer_image.paste(screen_image, (0, 0))
+            # # If buffer image is not created or its size differs from the screen photo, recreate buffer
+            # if self.buffer_image is None or self.buffer_image.size != img_size:
+            #     self.buffer_image = Image.new("RGB", img_size)
+            
+            # # Draw the screen photo onto the buffer image
+            # self.screen_canvas.update()
+            # self.buffer_image.paste(screen_image, (0, 0))
 
             # Clear canvas before updating
             self.screen_canvas.delete("all")
 
             # Draw buffer image onto the canvas
-            self.screen_canvas.create_image(0, 0, anchor='nw', image=self.screen_photo)
+            self.screen_canvas.create_image(0, pad, anchor='nw', image=self.screen_photo)
 
             # Keep a reference to the image to prevent it from being garbage collected
             self.screen_canvas.image = self.screen_photo
@@ -581,7 +596,8 @@ class ChatClient:
         while True:
             try:
                 self.buffer.read(socket=self.socket, handler=self.handle_listener)
-            except socket.error:
+            except socket.error as e:
+                print('Error 585:',e)
                 return
             
     # Handler
@@ -594,7 +610,8 @@ class ChatClient:
     def terminate(self):
         try:
             self.quit_room()
-        except Exception:
+        except Exception as e:
+            print('Error 599:',e)
             pass
         self.send_command({'action': 'exit', 'room_name': self.current_room})
         if self.error_state:
