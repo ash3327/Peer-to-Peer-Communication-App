@@ -493,6 +493,7 @@ class ChatClient:
     def handle_join_quit_room(self):
         self.clear_canvas()
         self.screen_stop_watching()
+        self.stop_share_screen()
         self.screen_share_button.set(is_on=False)
         self.mute_button.set(is_on=False)
         self.record_button.set(is_on=False, exec=False)
