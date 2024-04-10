@@ -420,7 +420,9 @@ class ChatServer:
         for member_socket in self.chat_rooms[room_name]:
             self.send_data(member_socket, label='record_end', contents={'room_name': room_name})
         try:
-            output_audio(self.recordings[room_name], room_name)
+            audio = self.recordings[room_name]
+            if audio.duration_seconds > 0:
+                output_audio(audio, room_name)
             del self.recordings[room_name]
         except Exception as e:
             self.log(e, mode='E/error')
