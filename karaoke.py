@@ -54,14 +54,32 @@ def separate_vocals(audio_path, room_name):
     os.makedirs(instrumental_dir, exist_ok=True)
     separator.separate_to_file(audio_path, instrumental_dir)
 
-    print(instrumental_dir, os.path.basename(file_name))
     return os.path.join(instrumental_dir, os.path.basename(file_name), 'accompaniment.wav')
+
+def extract_music(audio_path, room_name):
+    # reference: stackoverflow.com/questions/49279425/extract-human-vocals-from-song (question by ashish)
+    # which adopts a cancelling technique.
+    from pydub import AudioSegment
+    from pydub.playback import play
+
+    instrumental_dir = os.path.join(ROOT_PATH, room_name, 'extracted')
+    os.makedirs(instrumental_dir, exist_ok=True)
+
+    # read in audio file and get the two mono tracks
+    sound_stereo = AudioSegment.from_file(audio_path, format='mp3')
+    sound_l, sound_r = sound_stereo.split_to_mono()
+    sound_centers_out:AudioSegment = sound_l.overlay(sound_r.invert_phase())
+
+    stor_path = os.path.join(instrumental_dir, os.path.basename(audio_path))
+    sound_centers_out.export(stor_path, format='mp3')
+    return stor_path
 
 def get_pure_music(youtube_url, room):
     vid_path = dn_ytvideo(youtube_url, room)
     audio_path = extract_audio(vid_path)
     print('Output to:', audio_path)
-    output_file = separate_vocals(audio_path, room)
+    # output_file = separate_vocals(audio_path, room)
+    output_file = extract_music(audio_path, room)
     print('Result outputted in:', output_file)
     return output_file
 
