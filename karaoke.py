@@ -2,8 +2,9 @@ from pytube import YouTube
 from moviepy.editor import *
 from spleeter.separator import Separator
 import os
-import torch
-import openunmix
+
+import warnings
+warnings.filterwarnings('ignore')
 
 ROOT_PATH = "Karaoke"
 
@@ -16,8 +17,7 @@ def del_file(path):
 def dn_ytvideo(youtube_url, room_name):
     try:
         base_path = os.path.join(ROOT_PATH, room_name, "video")
-        if not os.path.exists(base_path):
-            os.makedirs(base_path)
+        os.makedirs(base_path, exist_ok=True)
         
         print("Downloading YouTube video ...")
         yt = YouTube(youtube_url)
@@ -36,16 +36,13 @@ def dn_ytvideo(youtube_url, room_name):
 
 def extract_audio(video_path):
     print("Extracting audio ...")
-    video_clip = VideoFileClip(video_path)
+    audio_clip = AudioFileClip(video_path)
     audio_path = os.path.dirname(video_path)
-    if not os.path.exists(audio_path):
-        os.makedirs(audio_path)
     audio_path = video_path.replace("video", "audio")
     audio_path = audio_path.replace(".mp4", ".mp3")
-    audio_clip = video_clip.audio
+    os.makedirs(os.path.dirname(audio_path), exist_ok=True)
     audio_clip.write_audiofile(audio_path)
     audio_clip.close()
-    video_clip.close()
     print("Audio extracted")
     #del_file(video_path)
     return audio_path
@@ -53,41 +50,28 @@ def extract_audio(video_path):
 def separate_vocals(audio_path, room_name):
     separator = Separator('spleeter:2stems')
     file_name = os.path.splitext(audio_path)[0]
-    instrumental_dir = os.path.join(ROOT_PATH, room_name)
-    if not os.path.exists(instrumental_dir):
-        os.makedirs(instrumental_dir)
+    instrumental_dir = os.path.join(ROOT_PATH, room_name, 'extracted')
+    os.makedirs(instrumental_dir, exist_ok=True)
     separator.separate_to_file(audio_path, instrumental_dir)
-    '''
-    spleeter_output_folder = os.path.join(instrumental_dir, file_name)
-    output_folder = spleeter_output_folder.replace(file_name, 'instrumental')
-    if os.path.exists(spleeter_output_folder):
-        os.rename(spleeter_output_folder, output_folder)
-        print("Directory renamed")
-    else:
-        print("Directory does not exist")
 
-    original_instrumental_path = os.path.join(output_folder, 'accompaniment.wav')
-    new_instrumental_path = original_instrumental_path.replace('accompaniment.wav', f"{file_name}.wav")
+    print(instrumental_dir, os.path.basename(file_name))
+    return os.path.join(instrumental_dir, os.path.basename(file_name), 'accompaniment.wav')
 
-    if os.path.exists(original_instrumental_path):
-        os.rename(original_instrumental_path, new_instrumental_path) '''
+def get_pure_music(youtube_url, room):
+    vid_path = dn_ytvideo(youtube_url, room)
+    audio_path = extract_audio(vid_path)
+    print('Output to:', audio_path)
+    output_file = separate_vocals(audio_path, room)
+    print('Result outputted in:', output_file)
+    return output_file
 
-def remove_vocals(audio_path, room_name):
-    model = openunmix.umxhq()
-    mix = torch.load(audio_path)
-    estimates = model(mix)
-    accompaniment = estimates['accompaniment']
-    accompaniment_path = os.path.join(ROOT_PATH, room_name, "audio.wav")
-    torch.save(accompaniment, accompaniment_path)
-
-
-#if __name__ == '__main__':
-youtube_url = "https://www.youtube.com/watch?v=8xg3vE8Ie_E&list=RD8xg3vE8Ie_E&start_radio=1&rv=ptSjNWnzpjg"
-room = "test"
-vid_path = dn_ytvideo(youtube_url, room)
-audio_path = extract_audio(vid_path)
-print(audio_path)
-remove_vocals(audio_path, room)
+if __name__ == '__main__':
+    youtube_urls = [
+        "https://www.youtube.com/watch?v=8xg3vE8Ie_E&list=RD8xg3vE8Ie_E&start_radio=1&rv=ptSjNWnzpjg",
+        "https://www.youtube.com/watch?v=qzwsQTY-99o&ab_channel=%E5%91%A8%E6%9D%B0%E5%80%ABJayChou"
+    ]
+    for youtube_url in youtube_urls:
+        get_pure_music(youtube_url=youtube_url, room='test')
 
 
     

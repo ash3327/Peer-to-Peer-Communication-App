@@ -264,6 +264,27 @@ class ChatClient:
             )
         self.quit_button.pack(side='left', padx=5)
 
+        # -------------- MAIN PANEL -------------
+        # Watch Stream Button
+        ws_btn_cfg = button_configs.copy()
+        ws_btn_cfg.pop('text')
+        self.watch_stream_button = ToggleButton(
+                self.main_frame, 
+                off_image=resources.get_icon('status','sharing_screen',image_size=image_size),
+                on_command=self.screen_start_watching, text='Watch Stream', text_color='black',
+                off_command=self.screen_stop_watching,
+                pos=dict(relx=.5, rely=.5, anchor='s'),
+                **ws_btn_cfg
+            )
+        
+        # Stop Watching Stream Button
+        self.stop_watching_stream_button = ToggleButton(
+                self.main_frame, 
+                on_command=self.screen_stop_watching, text='Stop Watching', text_color='black',
+                pos=dict(relx=.5, rely=0, anchor='n'),
+                **ws_btn_cfg
+            )
+
     # Alert Message
     def notify_user(self, message:str, duration:int=5000, label='info'):
         self.log(message, mode='D/print')
@@ -296,9 +317,14 @@ class ChatClient:
             self.notify_user("Room already joined.", label='neutral')
             
     def screen_start_watching(self):
+        self.stop_watching_stream_button.trigger(on=False)
+        self.watch_stream_button.hide()
         self.send_command({'action': 'screen_start_watching', 'room': self.current_room})
 
-    def screen_stop_watching(self):
+    def screen_stop_watching(self, update_buttons:bool=True):
+        if update_buttons:
+            self.stop_watching_stream_button.hide()
+            self.watch_stream_button.show()
         self.send_command({'action': 'screen_stop_watching', 'room': self.current_room})
 
     def request_user_name(self, user_name=None):
@@ -427,7 +453,7 @@ class ChatClient:
         if status == 'ok':
             self.notify_user('Now Sharing Screen', label='success')
             self.is_screen_sharing = True
-
+            self.watch_stream_button.trigger(on=True)
             threading.Thread(target=self.share_screen_thread, daemon=True).start()
         else: # someone else is sharing
             self.notify_user('Another user is sharing the screen', label='fail')
@@ -435,6 +461,7 @@ class ChatClient:
 
     def stop_share_screen(self):
         if self.is_screen_sharing:
+            self.watch_stream_button.set(is_on=True)
             self.send_command({'action': 'screen_unshare', 'room_name': self.current_room})
             self.notify_user('Stopped Sharing Screen')
             self.is_screen_sharing = False
@@ -480,7 +507,13 @@ class ChatClient:
         except Exception as e:
             print('Error updating canvas:', e)
 
-    def clear_canvas(self):
+    def clear_canvas(self, update_buttons:bool=True):
+        self.stop_watching_stream_button.hide()
+        print('Current Room:', self.current_room)
+        if update_buttons or self.current_room is None:
+            self.watch_stream_button.hide()
+        else:
+            self.watch_stream_button.show()
         self.rooms_listbox.set_user_is_sharing(None)
         self.screen_canvas.delete("all")
         # print('cleared canvas')
@@ -495,12 +528,14 @@ class ChatClient:
         self.notify_user('Room quitted.', label='success')
 
     def handle_join_quit_room(self):
-        self.clear_canvas()
-        self.screen_stop_watching()
         self.stop_share_screen()
+        self.clear_canvas()
+        self.watch_stream_button.trigger(on=False)
+        self.screen_stop_watching()
         self.screen_share_button.set(is_on=False)
         self.mute_button.set(is_on=False)
         self.record_button.set(is_on=False, exec=False)
+        self.watch_stream_button.hide()
 
     def update_user_name(self, user_name):
         self.user_name = user_name
@@ -557,9 +592,11 @@ class ChatClient:
             if response['status'] == 'ok':
                 self.notify_user(f"Joined room '{response['room']}' successfully.", label='success')
                 self.current_room = response['room']
+                self.watch_stream_button.hide()
                 self.clear_canvas()
+                if response['is_screen_sharing']:
+                    self.watch_stream_button.trigger(on=False)
                 self.list_rooms()
-                self.screen_start_watching()
                 self.start_audio_streaming(response['room'])
             elif response['status'] == 'room already joined':
                 self.notify_user("Room already joined.", label='neutral')
@@ -591,8 +628,11 @@ class ChatClient:
                 self.send_share_screen()
         elif label == 'response_screen_data':
             self.update_canvas(response['screen_data'], response['room'], response['sharer'])
+        elif label == 'allow_receiving_screen_share':
+            self.watch_stream_button.show()
+            self.screen_stop_watching(update_buttons=False)
         elif label == 'clear_canvas':
-            self.clear_canvas()
+            self.clear_canvas(update_buttons=not response['room_continue_streaming'])
         elif label == 'screen_share_response':
             self.share_screen_response(response['status'])
 

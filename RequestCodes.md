@@ -39,6 +39,8 @@ record_start | start recording notification | room_name
 record_end | end recording notification | room_name
 response_sample_rate | response for the sample rate used | sample_rate
 response_screen_data | | screen_data<br>room
+allow_receiving_screen_share | 
+clear_canvas | | continue_streaming
 terminate | notify the client that the server is going offline
 
 

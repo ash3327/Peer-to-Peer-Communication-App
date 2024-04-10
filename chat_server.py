@@ -70,6 +70,7 @@ class ChatServer:
         self.is_room_share_screen = dict() # Format: {room_name: True/False}
         self.room_screens = dict() # Format: {room_name: screen_bytes}
         self.screen_is_watching = dict()
+        self.screen_sharer = dict()
 
         # List to keep track of active requests
         self.requests = set()
@@ -141,13 +142,9 @@ class ChatServer:
 
         elif command['action'] == 'request_sample_rate':
             self.send_data(client_socket, label='response_sample_rate', contents={'sample_rate':RATE})
+       
         elif command['action'] == 'screen_share':
-            if (command['room_name'] not in self.is_room_share_screen) or (not self.is_room_share_screen[command['room_name']]):
-                self.is_room_share_screen[command['room_name']] = True
-                self.send_data(client_socket, label='screen_share_response', contents={'status': 'ok'})
-            else:
-                self.send_data(client_socket, label='screen_share_response', contents={'status': 'someone else is sharing'})
-        
+            self.screen_share(command['room_name'], client_socket)
         elif command['action'] == 'screen_unshare':
             self.screen_unshare(command['room_name'])
         elif command['action'] == 'update_screen':
@@ -160,7 +157,10 @@ class ChatServer:
         elif command['action'] == 'screen_start_watching':
             self.screen_is_watching[client_socket] = True
         elif command['action'] == 'screen_stop_watching':
-            self.screen_is_watching[client_socket] = False
+            if self.screen_is_watching[client_socket]:
+                is_room_share_screen = self.check_room_is_sharing_screen(command['room'])
+                self.screen_is_watching[client_socket] = False
+                self.send_data(client_socket, label='clear_canvas', contents={'room_continue_streaming':is_room_share_screen,'line':162})
 
     # remove client from room if client exits
     def remove_client(self, client_socket, room_name=None):
@@ -237,23 +237,40 @@ class ChatServer:
 
         except Exception as e:
             raise e
-        
+    
+    # Check if is sharing screen
+    def check_room_is_sharing_screen(self, room):
+        return (room in self.is_room_share_screen) and (self.is_room_share_screen[room])
+    
     # Send screen data to client
     def send_screen_data(self, room, sharer=None):
-        is_room_share_screen = (room in self.is_room_share_screen) and (self.is_room_share_screen[room])
+        is_room_share_screen = self.check_room_is_sharing_screen(room)
         for client_socket in self.chat_rooms[room]:
-            if not self.screen_is_watching[client_socket]:
-                continue
             if is_room_share_screen:
+                if not self.screen_is_watching[client_socket]:
+                    continue
                 content = {'screen_data': self.room_screens[room], 'room': room, 'sharer': self.user_names[sharer]}
                 self.send_data(client_socket, label='response_screen_data', contents=content)
             else:
                 # self.send_data(client_socket, label='clear_canvas')
-                self.send_data(client_socket, label='clear_canvas', contents={'d':'ummy'})
+                self.send_data(client_socket, label='clear_canvas', contents={'room_continue_streaming':is_room_share_screen,'line':255})
 
+    # Share
+    def screen_share(self, room, client_socket):
+        if (room not in self.is_room_share_screen) or (not self.is_room_share_screen[room]):
+            self.is_room_share_screen[room] = True
+            self.screen_sharer[room] = client_socket
+            self.send_data(client_socket, label='screen_share_response', contents={'status': 'ok'})
+            for other_client in self.chat_rooms[room]:
+                if other_client != client_socket:
+                    self.send_data(other_client, label='allow_receiving_screen_share')
+        else:
+            self.send_data(client_socket, label='screen_share_response', contents={'status': 'someone else is sharing'})
+    
     # Unshare
     def screen_unshare(self, room):
         self.is_room_share_screen[room] = False
+        self.screen_sharer[room] = None
         self.room_screens.pop(room)
         self.send_screen_data(room)
 
@@ -283,8 +300,14 @@ class ChatServer:
             if old_room:
                 self.chat_rooms[old_room].remove(client_socket)
             self.chat_rooms[room_name].append(client_socket)
-            
-            self.send_data(client_socket, label='join_room', contents={'status': 'ok','room':room_name})
+
+            is_screen_sharing = self.check_room_is_sharing_screen(room_name)
+            contents = {
+                'status': 'ok',
+                'room':room_name,
+                'is_screen_sharing':is_screen_sharing
+            }
+            self.send_data(client_socket, label='join_room', contents=contents)
             self.update_room_users(room_name)
             self.update_room_users(old_room)
         else:
@@ -329,10 +352,11 @@ class ChatServer:
             self.chat_rooms[room_name].remove(client_socket)
             self.list_rooms(client_socket)
             self.update_room_users(room_name)
-            # self.screen_unshare(room_name)
+            if self.screen_sharer[room_name] == client_socket:
+                self.screen_unshare(room_name)
 
     # Send data and encode data sent.
-    def send_data(self, client_socket, label:str, contents:dict, mode:str='utf-8'):
+    def send_data(self, client_socket, label:str, contents:dict=dict(), mode:str='utf-8'):
         try:
             assert mode=='utf-8', 'please write your own handler or modify code'
             self.log(contents, mode=f'O/{label}', socket=client_socket)
