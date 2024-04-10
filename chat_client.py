@@ -26,7 +26,7 @@ SERVER_HOST = '10.13.252.5'#'127.0.0.1'#'server_ip'  # Replace with the server's
 SERVER_PORT = 12345
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
-RATE = 11025
+RATE = 5000
 CHUNK = 1024
 FRAME_PER_SECOND = 10
 
