@@ -28,7 +28,7 @@ FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 5000
 CHUNK = 1024
-FRAME_PER_SECOND = 10
+FRAME_PER_SECOND = 5
 
 '''
     Parse command line arguments
