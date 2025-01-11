@@ -1,45 +1,12 @@
-# Peer-to-Peer Communication App
+# csci3280_2
 
-[![GitHub](https://img.shields.io/badge/public%20repo-github-%2324292e.svg?style=for-the-badge&logo=github&logoColor=white)](https://github.com/ash3327/Peer-to-Peer-Communication-App)
-![Last Commit](https://img.shields.io/badge/last%20commit-Apr%202024-%23FFA500.svg?style=for-the-badge&logo=git&logoColor=white)
+> [!NOTE]
+> Developer may need to call their ```pip install -r requirements.txt``` again after this update to support the use of fancier GUI through the ```customtkinter``` package. <br>
+>   - For more references on how to use this package, please refer to https://github.com/TomSchimansky/CustomTkinter.<br>
+>   - But actually you can still stick with the normal ```tkinter``` for basic UI.
 
-A fork of the project in the semester 2023-24 Term 2, creating a peer-to-peer communication app supporting audio recording, waveform display and editing, and also screen share function. 
-
-## Key Features
-- Peer-to-peer communication within local area network
-- Functions:
-  - Create, join and leave chat rooms
-  - Audio recording
-  - Screen sharing
-- Synchronization and handling of audio and video streams from multiple users so that they do not hear their own voices
-
-<table>
-  <tr>
-    <td>Chatroom Creation &amp; User Alias</td>
-    <td>Audio Recording</td>
-  </tr>
-  <tr>
-    <td><img src="docs/image-1.png" alt="Chatroom Creation &amp; User Alias"></td>
-    <td><img src="docs/image-2.png" alt="Audio Recording"></td>
-  </tr>
-  <tr>
-    <td colspan="2">Screen Sharing</td>
-  </tr>
-  <tr>
-    <td colspan="2"><img src="docs/image-3.png" alt="Screen Sharing"></td>
-  </tr>
-</table>
-
-## Architecture
-- Consists of ONE server and multiple clients
-- The server and clients can be runned on the same machine, or on different machines within the same local area network
-
-The calls between server and clients, visualized:
-![](docs/gui.jpeg)
-
-## Notes
-
-- Functions that allows usage over the internet are not implemented yet due to problems in port forwarding that requires extra care
+> [!IMPORTANT]
+> Please refer to ```JobAllocation.md``` for the latest (potential) bugs yet to be fixed.
 
 ## Installation
 
